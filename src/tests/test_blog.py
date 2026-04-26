@@ -5,7 +5,7 @@ if __name__ == "__main__":
 
     output = app.invoke(
         {
-            "topic": "Self Attention",
-            "save_to_path": "outputs/self_attention.md",
+            "topic": "State of Multimodal LLMs in 2026",
+            "save_to_path": "outputs/multimodal_llms_2026.md",
         }
     )

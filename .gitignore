@@ -8,3 +8,6 @@ __pycache__/
 
 # output markdowns
 outputs/
+
+# logs
+logs/

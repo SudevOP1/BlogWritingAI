@@ -15,12 +15,7 @@ def invoke_ai(
     returns success_bool and response_str or error_str
     """
 
-    small_prompt = (
-        (prompt.replace("\n", "\\n")[:50] + "..." + prompt.replace("\n", "\\n")[-20:])
-        if len(prompt.replace("\n", "\\n")) > 70
-        else prompt.replace("\n", "\\n")
-    )
-    debug.log(name="prompt", msg=small_prompt)
+    debug.log(name="prompt  ", msg=prompt)
 
     try:
         response = chat(
@@ -31,16 +26,7 @@ def invoke_ai(
         if not response:
             raise ValueError(f"Invalid response: {response}")
 
-        small_response = (
-            (
-                response.replace("\n", "\\n")[:50]
-                + "..."
-                + response.replace("\n", "\\n")[-20:]
-            )
-            if len(response.replace("\n", "\\n")) > 70
-            else response.replace("\n", "\\n")
-        )
-        debug.log(name="response", msg=small_response)
+        debug.log(name="response", msg=response)
 
         return True, response
 
