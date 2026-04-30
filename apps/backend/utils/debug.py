@@ -2,20 +2,23 @@ import os
 import datetime
 
 DEBUG = True
-LOG_FILE = "logs/logs.csv"
+LOG_FILEPATH = "logs/logs.csv"
 
 yellow = "\033[93m"
 red = "\033[31m"
 clear = "\033[0m"
 
-if DEBUG:
-    dir_path = os.path.dirname(LOG_FILE)
-    if dir_path and not os.path.exists(dir_path):
-        os.makedirs(dir_path)
 
-    if not os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "w") as f:
-            f.write("timestamp,log_type,name,msg\n")
+def create_log_file_if_not_exists() -> None:
+    """create log file if does not exists"""
+    if DEBUG:
+        dir_path = os.path.dirname(LOG_FILEPATH)
+        if dir_path and not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        if not os.path.exists(LOG_FILEPATH):
+            with open(LOG_FILEPATH, "w") as f:
+                f.write("timestamp,log_type,name,msg\n")
 
 
 def log(name: str, msg: str) -> None:
@@ -29,7 +32,7 @@ def log(name: str, msg: str) -> None:
 
         print(f"[{yellow}{name}{clear}] {small_msg}")
 
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILEPATH, "a") as f:
             f.write(f"{datetime.datetime.now()},LOG,{name.strip()},{formatted_msg}\n")
 
 
@@ -44,7 +47,7 @@ def error(name: str, error: str) -> None:
 
         print(f"[{red}{name}{clear}] {small_error}")
 
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILEPATH, "a") as f:
             f.write(
                 f"{datetime.datetime.now()},ERROR,{name.strip()},{formatted_error}\n"
             )
