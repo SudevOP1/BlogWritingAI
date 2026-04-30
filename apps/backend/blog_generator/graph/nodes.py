@@ -3,7 +3,7 @@ import json
 
 from ..research.tavily import invoke_internet_search
 from ..ai.invoke import invoke_ai_with_retries
-from ..utils import debug
+from utils import debug
 from .models import State, Plan, RouterDecision, EvidencePack
 from . import prompts
 

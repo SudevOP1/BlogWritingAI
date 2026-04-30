@@ -2,7 +2,7 @@ from ollama import chat
 
 import time
 
-from ..utils import debug
+from utils import debug
 from . import client
 
 

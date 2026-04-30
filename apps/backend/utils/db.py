@@ -9,6 +9,9 @@ client = AsyncIOMotorClient(settings.MONGO_DB_URI, server_api=ServerApi("1"))
 db = client["db"]
 
 
-async def create_users_collection_if_not_exists() -> None:
-    if "users" not in await db.list_collection_names():
-        await db.create_collection("users")
+async def create_collections_if_not_exists() -> None:
+    existing = await db.list_collection_names()
+    collections = ["users", "blogs", "comments", "blog_likes", "comment_likes"]
+    for collection in collections:
+        if collection not in existing:
+            await db.create_collection(collection)

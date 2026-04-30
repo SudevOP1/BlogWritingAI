@@ -1,7 +1,7 @@
 from langchain_tavily import TavilySearch
 import json
 
-from ..utils import debug
+from utils import debug
 
 
 def invoke_internet_search(query: str, max_results: int = 5) -> list[dict]:

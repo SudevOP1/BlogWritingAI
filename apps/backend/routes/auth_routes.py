@@ -13,7 +13,11 @@ async def signup(body: SignupRequest):
     existing_user = await db.users.find_one({"username": body.username})
 
     if existing_user:
-        raise HTTPException(status_code=409, detail="user already exists")
+        return {
+            "success": False,
+            "error": "user already exists",
+            "status_code": 409,
+        }
 
     user = await create_user(username=body.username, password=body.password)
 
@@ -33,7 +37,11 @@ async def login(body: LoginRequest):
     user = await db.users.find_one({"username": body.username})
 
     if not user or not verify_password(body.password, user.get("password")):
-        raise HTTPException(status_code=401, detail="invalid credentials")
+        return {
+            "success": False,
+            "error": "invalid credentials",
+            "status_code": 401,
+        }
 
     access_token = create_access_token(data={"username": user.get("username")})
 
