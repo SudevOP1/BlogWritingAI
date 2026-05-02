@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { ToastProvider } from "./context/ToastContext.jsx";
 import Layout from "./components/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
@@ -15,19 +16,21 @@ import BlogDetailPage from "./pages/BlogDetailPage.jsx";
 const App = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route    path="/"              element={<Layout />}>
-            <Route  index                 element={<LandingPage />} />
-            <Route  path="/login"         element={<LoginPage />} />
-            <Route  path="/signup"        element={<SignupPage />} />
-            <Route  path="/create-blog"   element={<ProtectedRoute><BlogCreationPage /></ProtectedRoute>} />
-            <Route  path="/dashboard"     element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route  path="/blog/:id"      element={<ProtectedRoute><BlogDetailPage /></ProtectedRoute>} />
-          </Route>
-          <Route    path="*"              element={<BrokenURL />} />
-        </Routes>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <Routes>
+            <Route    path="/"              element={<Layout />}>
+              <Route  index                 element={<LandingPage />} />
+              <Route  path="/login"         element={<LoginPage />} />
+              <Route  path="/signup"        element={<SignupPage />} />
+              <Route  path="/create-blog"   element={<ProtectedRoute><BlogCreationPage /></ProtectedRoute>} />
+              <Route  path="/dashboard"     element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route  path="/blog/:id"      element={<ProtectedRoute><BlogDetailPage /></ProtectedRoute>} />
+            </Route>
+            <Route    path="*"              element={<BrokenURL />} />
+          </Routes>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 };

@@ -1,6 +1,7 @@
 import { useState, createContext, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import { useToastContext } from "./ToastContext.jsx";
 
 const AuthContext = createContext();
 
@@ -15,6 +16,7 @@ export const useAuthContext = () => {
 export const AuthProvider = ({ children }) => {
   const backendUrl = "http://127.0.0.1:8000";
   const navigate = useNavigate();
+  const { addToast } = useToastContext();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -62,14 +64,14 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        alert("Signup successful! Please login to continue.");
+        addToast("Signup successful! Please login to continue.", "green", 5);
         navigate("/login");
       } else {
-        alert("signup failed: " + (data.error || "invalid credentials"));
+        addToast("Signup failed: " + (data.error || "invalid credentials"), "red", 5);
       }
     } catch (error) {
       console.error("/auth/signup error:", error);
-      alert("something went wrong. please try again");
+      addToast("Something went wrong. please try again", "red", 5);
     } finally {
       setLoading(false);
     }
@@ -99,13 +101,15 @@ export const AuthProvider = ({ children }) => {
         setAccessToken(token);
         setUser(decoded);
         localStorage.setItem("accessToken", token);
+
+        addToast(`Login successful, Welcome ${decoded.username}`, "green", 4);
         navigate(navigateTo);
       } else {
-        alert("login failed: " + (data.error || "invalid credentials"));
+        addToast("Login failed: " + (data.error || "invalid credentials"), "red", 5);
       }
     } catch (error) {
       console.error("/auth/login error:", error);
-      alert("something went wrong. please try again");
+      addToast("Something went wrong. please try again", "red", 5);
     } finally {
       setLoading(false);
     }
@@ -115,6 +119,8 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(null);
     setUser(null);
     localStorage.removeItem("accessToken");
+
+    addToast("Logged out!", "green", 3);
     navigate("/login");
   };
 
