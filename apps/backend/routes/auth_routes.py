@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from utils.db import db
 from utils.auth import verify_password, create_access_token, create_user

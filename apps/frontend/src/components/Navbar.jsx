@@ -1,11 +1,10 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { PenSquare, User, LogOut } from "lucide-react";
 import Button from "./ui/Button";
+import { useAuthContext } from "../context/AuthContext";
 
 const Navbar = () => {
-  // Temporary mock state until AuthContext is ready
-  const user = null;
+  const { user, logoutUser } = useAuthContext();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-background/80 backdrop-blur-md">
@@ -32,8 +31,13 @@ const Navbar = () => {
                   Dashboard
                 </Button>
               </Link>
-              <Button variant="outline" size="sm">
-                <LogOut className="w-4 h-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logoutUser}
+                className="flex flex-row items-center justify-center gap-2"
+              >
+                Logout <LogOut className="w-4 h-4" />
               </Button>
             </div>
           ) : (

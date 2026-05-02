@@ -1,5 +1,6 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
+import Loader from "./Loader";
 
 const Button = ({ children, variant = "primary", size = "md", isLoading = false, className = "", ...props }) => {
   const baseStyles = `inline-flex items-center justify-center font-medium transition-colors
@@ -7,7 +8,7 @@ const Button = ({ children, variant = "primary", size = "md", isLoading = false,
     disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer`;
 
   const variants = {
-    primary: "bg-primary text-white hover:bg-primary-hover focus:ring-primary",
+    primary: "bg-primary text-white hover:bg-primary-hover focus:ring-primary disabled:bg-disabled",
     secondary: "bg-surface text-white hover:bg-surface-hover focus:ring-slate-500",
     outline: "border border-slate-700 hover:bg-surface focus:ring-slate-500 text-slate-200",
     ghost: "hover:bg-surface text-slate-300 hover:text-white focus:ring-slate-500",
@@ -25,7 +26,7 @@ const Button = ({ children, variant = "primary", size = "md", isLoading = false,
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {isLoading && <Loader size={size} className="mr-2" />}
       {children}
     </button>
   );

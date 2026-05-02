@@ -6,6 +6,7 @@
   --color-background: #0f172a; /* Slate 900 */
   --color-surface: #1e293b; /* Slate 800 */
   --color-surface-hover: #334155; /* Slate 700 */
+  --color-disabled: #475569; /* Slate 600 */
   --font-sans: "Outfit", sans-serif;
 }
 

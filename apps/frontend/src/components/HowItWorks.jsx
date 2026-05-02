@@ -51,7 +51,7 @@ const HowItWorks = () => {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
             className="inline-flex flex-row items-center justify-center gap-2 rounded-full border border-primary/30
-              bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-2"
+              bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-4"
           >
             <CircleQuestionMark className="w-4 h-4" />
             Process

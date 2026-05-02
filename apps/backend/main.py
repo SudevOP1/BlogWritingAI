@@ -39,10 +39,11 @@ app.add_middleware(
 )
 
 
-app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
-app.include_router(blog_router, prefix="/api/blogs", tags=["Blog"])
-app.include_router(community_router, prefix="/api", tags=["Community"])
-app.include_router(user_router, prefix="/api/users", tags=["User"])
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(blog_router, prefix="/blogs", tags=["Blog"])
+app.include_router(community_router, prefix="/community", tags=["Community"])
+app.include_router(user_router, prefix="/users", tags=["User"])
+
 
 @app.get("/status")
 async def status() -> JSONResponse:

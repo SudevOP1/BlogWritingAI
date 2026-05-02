@@ -1,17 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { PenSquare } from "lucide-react";
+import { useAuthContext } from "../context/AuthContext";
 
 const LoginPage = () => {
   const [username, setusername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const { loginUser, loading } = useAuthContext();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Connect to backend
-    console.log("Login:", { username, password });
+    await loginUser(username, password, "/dashboard");
   };
 
   return (
@@ -40,8 +42,8 @@ const LoginPage = () => {
             <Input type="password" placeholder="•••" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
 
-          <Button type="submit" className="w-full mt-6">
-            Sign In
+          <Button type="submit" className="w-full mt-6" isLoading={loading}>
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
