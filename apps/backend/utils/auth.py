@@ -55,18 +55,18 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
-def verify_token(token: str) -> dict:
+def verify_token(token: str) -> tuple[bool, dict | str]:
     try:
         payload = jwt.decode(
             token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
         )
-        return payload
+        return True, payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="token expired")
+        return False, "token expired"
     except Exception:
-        raise HTTPException(status_code=401, detail="invalid token")
+        return False, "invalid token"
 
 
 async def get_current_user(
@@ -74,9 +74,11 @@ async def get_current_user(
 ) -> dict:
 
     token = credentials.credentials
-    payload = verify_token(token)
+    payload_ok, payload = verify_token(token)
 
-    # payload must include username
+    if not payload_ok:
+        raise HTTPException(status_code=401, detail=payload)
+
     username = payload.get("username")
     if not username:
         raise HTTPException(status_code=401, detail="invalid token")
@@ -91,6 +93,10 @@ async def get_current_user(
 
 async def create_user(username: str, password: str):
     hashed = hash_password(password)
-    return await db.users.insert_one(
+
+    result = await db.users.insert_one(
         {"username": username, "password": hashed, "created_at": datetime.utcnow()}
     )
+
+    user = await db.users.find_one({"_id": result.inserted_id})
+    return user

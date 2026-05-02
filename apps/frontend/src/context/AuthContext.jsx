@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        alert("Signup successful! Please login to continue.");
         navigate("/login");
       } else {
         alert("signup failed: " + (data.error || "invalid credentials"));

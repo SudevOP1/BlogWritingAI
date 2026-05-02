@@ -9,44 +9,58 @@ auth_router = APIRouter()
 
 @auth_router.post("/signup")
 async def signup(body: SignupRequest):
+    try:
+        existing_user = await db.users.find_one({"username": body.username})
 
-    existing_user = await db.users.find_one({"username": body.username})
+        if existing_user:
+            return {
+                "success": False,
+                "error": "user already exists",
+                "status_code": 409,
+            }
 
-    if existing_user:
+        user = await create_user(username=body.username, password=body.password)
+
         return {
-            "success": False,
-            "error": "user already exists",
-            "status_code": 409,
+            "success": True,
+            "user": {
+                "username": user.get("username"),
+                "id": str(user.get("_id")),
+                "created_at": user.get("created_at").isoformat(),
+            },
         }
 
-    user = await create_user(username=body.username, password=body.password)
-
-    return {
-        "success": True,
-        "user": {
-            "username": user.get("username"),
-            "id": str(user.get("_id")),
-            "created_at": user.get("created_at").isoformat(),
-        },
-    }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }
 
 
 @auth_router.post("/login")
 async def login(body: LoginRequest):
+    try:
+        user = await db.users.find_one({"username": body.username})
 
-    user = await db.users.find_one({"username": body.username})
+        if not user or not verify_password(body.password, user.get("password")):
+            return {
+                "success": False,
+                "error": "invalid credentials",
+                "status_code": 401,
+            }
 
-    if not user or not verify_password(body.password, user.get("password")):
+        access_token = create_access_token(data={"username": user.get("username")})
+
         return {
-            "success": False,
-            "error": "invalid credentials",
-            "status_code": 401,
+            "success": True,
+            "access_token": access_token,
+            "token_type": "bearer",
         }
 
-    access_token = create_access_token(data={"username": user.get("username")})
-
-    return {
-        "success": True,
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }
