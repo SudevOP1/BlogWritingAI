@@ -11,7 +11,7 @@ const Layout = () => {
     <div className="min-h-screen flex flex-col bg-background text-slate-100">
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 h-auto">
         <Outlet />
       </main>
 

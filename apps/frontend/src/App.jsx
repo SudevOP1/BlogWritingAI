@@ -6,7 +6,7 @@ import Layout from "./components/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 import BrokenURL from "./pages/BrokenURL.jsx";
-import LandingPage from "./pages/LandingPage.jsx";
+import MainPage from "./pages/MainPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
 import BlogCreationPage from "./pages/BlogCreationPage.jsx";
@@ -20,14 +20,14 @@ const App = () => {
         <AuthProvider>
           <Routes>
             <Route    path="/"              element={<Layout />}>
-              <Route  index                 element={<LandingPage />} />
+              <Route  index                 element={<MainPage />} />
               <Route  path="/login"         element={<LoginPage />} />
               <Route  path="/signup"        element={<SignupPage />} />
               <Route  path="/create-blog"   element={<ProtectedRoute><BlogCreationPage /></ProtectedRoute>} />
               <Route  path="/dashboard"     element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route  path="/blog/:id"      element={<ProtectedRoute><BlogDetailPage /></ProtectedRoute>} />
+              <Route  path="/blog/:blogId"  element={<ProtectedRoute><BlogDetailPage /></ProtectedRoute>} />
+              <Route  path="*"              element={<BrokenURL />} />
             </Route>
-            <Route    path="*"              element={<BrokenURL />} />
           </Routes>
         </AuthProvider>
       </ToastProvider>
