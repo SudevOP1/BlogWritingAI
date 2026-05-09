@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from bson import ObjectId
 from datetime import datetime
 
@@ -49,7 +49,7 @@ async def get_comments(blog_id: str):
 
         for c in comments:
             c["id"] = str(c["_id"])
-            c["_id"] = str(c["_id"])
+            del c["_id"]
             c["blog_id"] = str(c["blog_id"])
             c["user_id"] = str(c["user_id"])
             c["parent_id"] = str(c["parent_id"]) if c.get("parent_id") else None

@@ -20,6 +20,10 @@ def create_log_file_if_not_exists() -> None:
             with open(LOG_FILEPATH, "w") as f:
                 f.write("timestamp,log_type,name,msg\n")
 
+        else:
+            with open(LOG_FILEPATH, "a") as f:
+                f.write("\n")
+
 
 def log(name: str, msg: str) -> None:
     if DEBUG:

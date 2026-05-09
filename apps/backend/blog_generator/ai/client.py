@@ -1,3 +1,4 @@
-import os
+from utils.settings import get_settings
 
-MODEL = os.getenv("MODEL", "")
+settings = get_settings()
+MODEL = settings.MODEL

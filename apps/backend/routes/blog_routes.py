@@ -1,8 +1,14 @@
-import json
-from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    BackgroundTasks,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from bson import ObjectId
 from datetime import datetime
+import asyncio
 
 from utils.auth import get_current_user
 from utils.db import db
@@ -11,69 +17,108 @@ from utils.models import BlogStatusUpdate
 
 blog_router = APIRouter()
 
-# Instantiate the langgraph app
+# instantiate the langgraph app
 graph_app = build_app()
 
 
-@blog_router.get("/generate")
+async def run_generation(blog_id: str, topic: str):
+    initial_state = {"topic": topic}
+    try:
+        async for event in graph_app.astream(initial_state):
+            node_name = list(event.keys())[0]
+            node_data = event[node_name]
+
+            # update status to show current progress
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)},
+                {"$set": {"status": f"processing: {node_name}"}},
+            )
+
+            # if plan is generated, update the title
+            if node_name == "orchestrator" and "plan" in node_data:
+                plan = node_data["plan"]
+                title = getattr(plan, "blog_title", "")
+                if title:
+                    await db.blogs.update_one(
+                        {"_id": ObjectId(blog_id)}, {"$set": {"title": title}}
+                    )
+
+            # if finished, update the DB
+            if node_name == "reducer" and "final" in node_data:
+                final_content = node_data["final"]
+                await db.blogs.update_one(
+                    {"_id": ObjectId(blog_id)},
+                    {
+                        "$set": {
+                            "content": final_content,
+                            "is_generated": True,
+                            "status": "completed",
+                        }
+                    },
+                )
+
+    except ValueError as e:
+        error_str = str(e)
+        if "INVALID_TOPIC" in error_str:
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "error_message": "Invalid topic",
+                        "is_generated": True,
+                    }
+                },
+            )
+        else:
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "error_message": error_str,
+                        "is_generated": True,
+                    }
+                },
+            )
+
+    except Exception as e:
+        await db.blogs.update_one(
+            {"_id": ObjectId(blog_id)},
+            {
+                "$set": {
+                    "status": "failed",
+                    "error_message": str(e),
+                    "is_generated": True,
+                }
+            },
+        )
+
+
+@blog_router.post("/generate")
 async def generate_blog(
-    request: Request,
+    background_tasks: BackgroundTasks,
     topic: str = Query(...),
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        # Create draft blog
+        # create draft blog
         blog_doc = {
             "author_id": ObjectId(current_user["id"]),
             "topic": topic,
             "title": "",
             "content": "",
             "status": "draft",
+            "is_generated": False,
             "created_at": datetime.utcnow(),
         }
         result = await db.blogs.insert_one(blog_doc)
         blog_id = str(result.inserted_id)
 
-        async def event_generator():
-            yield f"data: {json.dumps({'type': 'init', 'blog_id': blog_id})}\n\n"
+        # start generation in background
+        background_tasks.add_task(run_generation, blog_id, topic)
 
-            initial_state = {"topic": topic}
-
-            try:
-                async for event in graph_app.astream(initial_state):
-                    # Request disconnected
-                    if await request.is_disconnected():
-                        break
-
-                    node_name = list(event.keys())[0]
-                    node_data = event[node_name]
-
-                    # Yield progress
-                    yield f"data: {json.dumps({'type': 'progress', 'node': node_name})}\n\n"
-
-                    # If plan is generated, update the title
-                    if node_name == "orchestrator" and "plan" in node_data:
-                        plan = node_data["plan"]
-                        title = getattr(plan, "blog_title", "")
-                        if title:
-                            await db.blogs.update_one(
-                                {"_id": ObjectId(blog_id)}, {"$set": {"title": title}}
-                            )
-
-                    # If finished, update the DB
-                    if node_name == "reducer" and "final" in node_data:
-                        final_content = node_data["final"]
-                        await db.blogs.update_one(
-                            {"_id": ObjectId(blog_id)},
-                            {"$set": {"content": final_content}},
-                        )
-
-                        yield f"data: {json.dumps({'type': 'complete', 'content': final_content})}\n\n"
-
-            except Exception as e:
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-
-        return StreamingResponse(event_generator(), media_type="text/event-stream")
+        return {"success": True, "blog_id": blog_id}
 
     except Exception as e:
         return {
@@ -126,7 +171,7 @@ async def get_public_blogs(skip: int = 0, limit: int = 10):
 
         for b in blogs:
             b["id"] = str(b["_id"])
-            b["_id"] = str(b["_id"])
+            del b["_id"]
             b["author_id"] = str(b["author_id"]) if b.get("author_id") else None
             b["created_at"] = (
                 b.get("created_at").isoformat() if b.get("created_at") else None
@@ -142,36 +187,41 @@ async def get_public_blogs(skip: int = 0, limit: int = 10):
         }
 
 
-@blog_router.get("/{blog_id}")
-async def get_blog(blog_id: str):
+@blog_router.websocket("/{blog_id}")
+async def blog_websocket(websocket: WebSocket, blog_id: str):
+    await websocket.accept()
     try:
-        blog = await db.blogs.find_one({"_id": ObjectId(blog_id)})
-        if not blog:
-            return {
-                "success": False,
-                "error": f"blog not found: {blog_id}",
-                "status_code": 404,
-            }
+        while True:
+            blog = await db.blogs.find_one({"_id": ObjectId(blog_id)})
+            if not blog:
+                await websocket.send_json({"error": "Blog not found"})
+                break
 
-        if blog.get("status") != "published":
-            return {
-                "success": False,
-                "error": "blog not published yet",
-                "status_code": 403,
-            }
+            blog["id"] = str(blog["_id"])
+            del blog["_id"]
+            blog["author_id"] = (
+                str(blog["author_id"]) if blog.get("author_id") else None
+            )
+            blog["created_at"] = (
+                blog.get("created_at").isoformat() if blog.get("created_at") else None
+            )
 
-        blog["id"] = str(blog["_id"])
-        blog["_id"] = str(blog["_id"])
-        blog["author_id"] = str(blog["author_id"]) if blog.get("author_id") else None
-        blog["created_at"] = (
-            blog.get("created_at").isoformat() if blog.get("created_at") else None
-        )
+            await websocket.send_json(blog)
 
-        return {"success": True, "blog": blog}
+            if blog.get("is_generated"):
+                break
 
+            await asyncio.sleep(1)
+
+    except WebSocketDisconnect:
+        pass  # already disconnected
     except Exception as e:
-        return {
-            "success": False,
-            "error": f"something went wrong: {str(e)}",
-            "status_code": 500,
-        }
+        try:
+            await websocket.send_json({"error": str(e)})
+        except Exception:
+            pass  # cannot send error
+    finally:
+        try:
+            await websocket.close()
+        except RuntimeError:
+            pass  # already disconnected

@@ -1,14 +1,17 @@
+from utils.settings import get_settings
 from langchain_tavily import TavilySearch
 import json
 
 from utils import debug
+
+settings = get_settings()
 
 
 def invoke_internet_search(query: str, max_results: int = 5) -> list[dict]:
 
     debug.log("tavily_query  ", query)
 
-    tool = TavilySearch(max_results=max_results)
+    tool = TavilySearch(tavily_api_key=settings.TAVILY_API_KEY, max_results=max_results)
     results = tool.invoke({"query": query})
 
     # TavilySearch can return a list of dicts or a list of strings

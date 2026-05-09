@@ -18,6 +18,9 @@ def router_node(state: State, config=None) -> dict:
 
     content = content.strip().strip("```json").strip("```")
 
+    if '"error":' in content:
+        raise ValueError(f"Error: {content}")
+
     # parse the json response into a RouterDecision object
     router_decision_dict = json.loads(content)
     router_decision = RouterDecision(**router_decision_dict)

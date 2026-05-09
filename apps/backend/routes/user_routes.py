@@ -93,7 +93,7 @@ async def get_bookmarks(current_user: dict = Depends(get_current_user)):
 
         for b in blogs:
             b["id"] = str(b["_id"])
-            b["_id"] = str(b["_id"])
+            del b["_id"]
             b["author_id"] = str(b["author_id"]) if b.get("author_id") else None
             b["created_at"] = (
                 b.get("created_at").isoformat() if b.get("created_at") else None

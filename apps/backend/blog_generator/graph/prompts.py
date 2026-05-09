@@ -27,6 +27,9 @@ Your output JSON must follow this exact schema:
 - mode: string (closed_book / hybrid / open_book)
 - queries: list[string] (if needs_research=True, list should have 3-10 queries)
 
+If the topic is invalid, empty, nonsensical, or insufficiently specified, return EXACTLY:
+{"needs_research":false,"mode":"closed_book","queries":[],"error":"INVALID_TOPIC"}
+
 Topic: <user_input>{topic}</user_input>"""
 
 research_prompt = """You are a research synthesizer for technical writing.

@@ -12,6 +12,7 @@ class BlogModel(BaseModel):
     title: str = ""
     content: str = ""
     status: str = "draft"
+    is_generated: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
