@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [username, setUsername] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
 
   // Initialize auth state from localStorage
@@ -100,7 +101,9 @@ export const AuthProvider = ({ children }) => {
 
         setAccessToken(token);
         setUser(decoded);
+        setUsername(username);
         localStorage.setItem("accessToken", token);
+        localStorage.setItem("username", username);
 
         addToast(`Login successful, Welcome ${decoded.username}`, "green", 4);
         navigate(navigateTo);
@@ -118,7 +121,9 @@ export const AuthProvider = ({ children }) => {
   const logoutUser = () => {
     setAccessToken(null);
     setUser(null);
+    setUsername(null);
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("username");
 
     addToast("Logged out!", "green", 3);
     navigate("/login");
@@ -126,7 +131,7 @@ export const AuthProvider = ({ children }) => {
 
   const contextData = {
     user: user,
-    username: user?.username || null,
+    username: username,
     backendUrl: backendUrl,
     accessToken: accessToken,
     signupUser: signupUser,

@@ -194,7 +194,7 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
         while True:
             blog = await db.blogs.find_one({"_id": ObjectId(blog_id)})
             if not blog:
-                await websocket.send_json({"error": "Blog not found"})
+                await websocket.send_json({"type": "error", "error": "Blog not found"})
                 break
 
             blog["id"] = str(blog["_id"])
@@ -206,7 +206,7 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
                 blog.get("created_at").isoformat() if blog.get("created_at") else None
             )
 
-            await websocket.send_json(blog)
+            await websocket.send_json({"type": "blog", "blog": blog})
 
             if blog.get("is_generated"):
                 break
@@ -217,7 +217,7 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
         pass  # already disconnected
     except Exception as e:
         try:
-            await websocket.send_json({"error": str(e)})
+            await websocket.send_json({"type": "error", "error": str(e)})
         except Exception:
             pass  # cannot send error
     finally:

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { PenSquare } from "lucide-react";
@@ -9,7 +9,14 @@ const LoginPage = () => {
   const [username, setusername] = useState("");
   const [password, setPassword] = useState("");
 
-  const { loginUser, loading } = useAuthContext();
+  const { accessToken, loginUser, loading } = useAuthContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (accessToken) {
+      navigate("/dashboard");
+    }
+  }, [accessToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
