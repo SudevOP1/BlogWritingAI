@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { PenSquare } from "lucide-react";
@@ -11,16 +11,17 @@ const LoginPage = () => {
 
   const { accessToken, loginUser, loading } = useAuthContext();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (accessToken) {
-      navigate("/dashboard");
+      navigate(location.state?.from || "/dashboard");
     }
   }, [accessToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await loginUser(username, password, "/dashboard");
+    await loginUser(username, password, location.state?.from || "/dashboard");
   };
 
   return (
