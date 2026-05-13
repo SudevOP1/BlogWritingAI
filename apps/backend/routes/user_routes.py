@@ -107,3 +107,51 @@ async def get_bookmarks(current_user: dict = Depends(get_current_user)):
             "error": f"something went wrong: {str(e)}",
             "status_code": 500,
         }
+
+
+@user_router.get("/search")
+async def search_users(q: str = ""):
+    try:
+        if not q:
+            return {"success": True, "users": []}
+
+        cursor = db.users.find(
+            {"username": {"$regex": q, "$options": "i"}}, {"username": 1, "_id": 1}
+        ).limit(20)
+
+        users = []
+        async for user in cursor:
+            users.append({"id": str(user["_id"]), "username": user["username"]})
+
+        return {"success": True, "users": users}
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }
+
+
+@user_router.get("/{user_id}")
+async def get_user_details(user_id: str):
+    try:
+        user = await db.users.find_one(
+            {"_id": ObjectId(user_id)}, {"username": 1, "_id": 1}
+        )
+        if not user:
+            return {
+                "success": False,
+                "error": "user not found",
+                "status_code": 404,
+            }
+
+        return {
+            "success": True,
+            "user": {"id": str(user["_id"]), "username": user["username"]},
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }

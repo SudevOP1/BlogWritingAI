@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Button from "../components/ui/Button";
-import { Loader2 } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 import { useToastContext } from "../context/ToastContext";
+import Loader from "../components/ui/Loader";
 
 const steps = [
   { id: "router", label: "Analyzing Topic" },
@@ -20,47 +20,16 @@ const BlogDetailPage = () => {
   const { blogId } = useParams();
   const { backendUrl } = useAuthContext();
   const [blog, setBlog] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [authorUsername, setAuthorUsername] = useState(null);
+  const [isAuthorLoading, setIsAuthorLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState("idle");
 
   const { addToast } = useToastContext();
+  const navigate = useNavigate();
 
-  const mockBlog = {
-    blogId: "1",
-    title: "The Future of Agentic AI in Software Engineering",
-    content: `
-# Introduction to Agentic AI
-Agentic AI is revolutionizing how we write code. Instead of simple autocomplete, these agents can reason, plan, and execute multi-step tasks across complex codebases.
-
-## Why it matters
-The transition from passive tools to active agents means:
-- Faster development cycles
-- Fewer boilerplate errors
-- More time for architectural decisions
-
-### Example Code
-\`\`\`javascript
-const agent = new DeveloperAgent({
-  skills: ['React', 'Node', 'Python'],
-  autonomyLevel: 'high'
-});
-
-await agent.buildFeature('Login Page');
-\`\`\`
-
-> "The future of coding is managing agents, not writing syntax." - AI Enthusiast
-
-Let's embrace the future!
-  `,
-    author: { username: "AI_Researcher" },
-    created_at: new Date().toISOString(),
-    likes_count: 124,
-    comments_count: 32,
-    is_liked: false,
-    is_bookmarked: false,
-  };
-
+  // websocket connection to get blog updates
   useEffect(() => {
     let ws = null;
     let isMounted = true;
@@ -76,13 +45,13 @@ Let's embrace the future!
         if (data.type === "error") {
           setError(data.error);
           addToast(data.error, "error", 5);
-          setIsLoading(false);
+          setIsEditing(false);
           return;
         }
 
         if (data.type === "blog") {
           setBlog(data.blog);
-          setIsLoading(false);
+          setIsEditing(false);
 
           // Update current step based on status
           if (data.blog.status && data.blog.status.startsWith("processing: ")) {
@@ -107,7 +76,7 @@ Let's embrace the future!
         console.error("WebSocket error:", err);
         addToast("Failed to connect to the blog service.", "error", 5);
         setError("Failed to connect to the blog service.");
-        setIsLoading(false);
+        setIsEditing(false);
       };
 
       ws.onclose = () => {
@@ -125,10 +94,33 @@ Let's embrace the future!
     };
   }, [blogId, backendUrl, addToast]);
 
-  if (isLoading) {
+  // fetch author username
+  useEffect(() => {
+    const fetchAuthorUsername = async () => {
+      if (!blog?.author_id) {
+        return;
+      }
+      setIsAuthorLoading(true);
+      try {
+        const res = await fetch(`${backendUrl}/users/${blog.author_id}`);
+        if (!res.ok) throw new Error("Failed to fetch author");
+        const data = await res.json();
+        if (data.success) setAuthorUsername(data.user.username);
+      } catch (error) {
+        console.error("Error fetching author:", error);
+        addToast("Failed to load author", "error", 3);
+      } finally {
+        setIsAuthorLoading(false);
+      }
+    };
+
+    fetchAuthorUsername();
+  }, [blog]);
+
+  if (isEditing) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <Loader className="w-8 h-8 text-primary" />
       </div>
     );
   }
@@ -195,7 +187,7 @@ Let's embrace the future!
                         {isPast ? (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         ) : isCurrent ? (
-                          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                          <Loader className="w-4 h-4" />
                         ) : (
                           <span className="text-slate-500 text-sm">{idx + 1}</span>
                         )}
@@ -213,11 +205,7 @@ Let's embrace the future!
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-surface/80">
               <div className="flex items-center space-x-2">
                 <FileText className="w-5 h-5 text-primary" />
-                <span className="font-medium">Live Generation Preview</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs text-slate-400 font-medium uppercase tracking-tighter">Live Updates</span>
+                <span className="font-medium">Live Preview</span>
               </div>
             </div>
 
@@ -228,7 +216,7 @@ Let's embrace the future!
                 </article>
               ) : (
                 <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-500 space-y-4">
-                  <Loader2 className="w-12 h-12 text-primary/20 animate-spin" />
+                  <Loader className="w-12 h-12 text-primary/20" />
                   <p className="animate-pulse">Waking up the AI writers...</p>
                 </div>
               )}
@@ -241,27 +229,42 @@ Let's embrace the future!
 
   // Normal return for generated blog
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-8 transition-colors">
-        <ArrowLeft className="w-4 h-4 mr-2" />
+    <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-7">
+      <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white transition-colors group">
+        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-2 group-hover:scale-130 transition" />
         Back to Feed
       </Link>
 
-      <article>
-        <header className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">{blog.title}</h1>
+      <article className="flex flex-col gap-5">
+        <header className="flex flex-col gap-8">
+          {/* title */}
+          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">{blog.title}</h1>
 
-          <div className="flex items-center justify-between border-y border-slate-800 py-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg">
-                {blog.author?.username?.[0]?.toUpperCase() || "A"}
-              </div>
-              <div>
-                <p className="text-white font-medium">{blog.author?.username || "Anonymous"}</p>
-                <p className="text-slate-500 text-sm">{new Date(blog.created_at).toLocaleDateString()}</p>
-              </div>
+          {/* author details */}
+          <div className="flex flex-row gap-4 items-center">
+            <div
+              className="flex flex-row gap-4 items-center cursor-pointer"
+              onClick={() => authorUsername && navigate(`/user/${blog.author_id}`)}
+            >
+              {isAuthorLoading ? (
+                <div className="flex items-center gap-4 animate-pulse">
+                  <div className="w-10 h-10 rounded-full bg-slate-800" />
+                  <div className="h-5 bg-slate-800 rounded-md w-24" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg border border-primary/10">
+                    {authorUsername?.[0]?.toUpperCase() || "A"}
+                  </div>
+                  <span className="text-primary text-xl font-medium">{authorUsername}</span>
+                </div>
+              )}
             </div>
+            <p className="text-slate-500 text-md">{new Date(blog.created_at).toLocaleDateString()}</p>
+          </div>
 
+          {/* like, comment, bookmark, share buttons */}
+          <div className="flex items-center justify-between border-y border-slate-800 py-4">
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="sm" className="">
                 <Heart className={`w-5 h-5 mr-2`} />
@@ -281,13 +284,14 @@ Let's embrace the future!
           </div>
         </header>
 
+        {/* content */}
         <div className="markdown-body">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content?.replace(/^\s*#\s+.*?(\r\n|\n|$)/, "")}</ReactMarkdown>
         </div>
       </article>
 
-      {/* Simple Comments Section Stub */}
-      <section className="mt-16 pt-8 border-t border-slate-800">
+      {/* comments section */}
+      <section className="pt-8 border-t border-slate-800">
         <h3 className="text-2xl font-bold mb-6">Comments ({blog.comments_count || 0})</h3>
         <div className="bg-surface rounded-lg p-6 text-center text-slate-500">Comments feature coming soon.</div>
       </section>
