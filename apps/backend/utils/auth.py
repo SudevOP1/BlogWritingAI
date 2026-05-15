@@ -91,6 +91,31 @@ async def get_current_user(
     return {"username": username, "id": user.get("_id")}
 
 
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+) -> Optional[dict]:
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    if not token or token == "null" or token == "undefined":
+        return None
+
+    payload_ok, payload = verify_token(token)
+    if not payload_ok:
+        return None
+
+    username = payload.get("username")
+    if not username:
+        return None
+
+    user = await db.users.find_one({"username": username})
+    if not user:
+        return None
+
+    return {"username": username, "id": user.get("_id")}
+
+
 async def create_user(username: str, password: str):
     hashed = hash_password(password)
 

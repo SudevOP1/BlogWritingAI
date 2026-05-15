@@ -18,16 +18,107 @@ const steps = [
 
 const BlogDetailPage = () => {
   const { blogId } = useParams();
-  const { backendUrl } = useAuthContext();
+  const { backendUrl, accessToken } = useAuthContext();
+
   const [blog, setBlog] = useState(null);
-  const [authorUsername, setAuthorUsername] = useState(null);
-  const [isAuthorLoading, setIsAuthorLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState("idle");
 
+  const [authorUsername, setAuthorUsername] = useState(null);
+  const [isAuthorLoading, setIsAuthorLoading] = useState(true);
+  const [likes, setLikes] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLikesLoading, setIsLikesLoading] = useState(true);
+
   const { addToast } = useToastContext();
   const navigate = useNavigate();
+
+  const handleBlogLike = async () => {
+    if (!accessToken) {
+      addToast("Please login to like the blog", "red", 3);
+      navigate("/login", { state: { from: `/blogs/${blogId}` } });
+      return;
+    }
+
+    // Optimistic update
+    const oldIsLiked = isLiked;
+    const oldLikes = likes;
+    setIsLiked(!oldIsLiked);
+    setLikes((prev) => (oldIsLiked ? prev - 1 : prev + 1));
+
+    try {
+      const res = await fetch(`${backendUrl}/community/blogs/${blogId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to like");
+      }
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || "Failed to like");
+      }
+      // Refresh with actual count from server
+      await fetchLikes();
+    } catch (error) {
+      console.error("Error liking blog:", error);
+      addToast("Failed to like blog", "red", 3);
+      // Rollback
+      setIsLiked(oldIsLiked);
+      setLikes(oldLikes);
+    }
+  };
+
+  const fetchLikes = async () => {
+    setIsLikesLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/community/blogs/${blogId}/likes`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) {
+        addToast("Failed to fetch likes", "red", 3);
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        setLikes(data.num_likes);
+        setIsLiked(data.liked ?? false);
+      }
+    } catch (error) {
+      console.error("Error fetching likes:", error);
+      addToast("Failed to load likes", "red", 3);
+    } finally {
+      setIsLikesLoading(false);
+    }
+  };
+
+  const fetchAuthorUsername = async () => {
+    if (!blog?.author_id) {
+      return;
+    }
+    setIsAuthorLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/users/${blog.author_id}`);
+      if (!res.ok) {
+        addToast("Failed to fetch author", "red", 3);
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        setAuthorUsername(data.user.username);
+      }
+    } catch (error) {
+      console.error("Error fetching author:", error);
+      addToast("Failed to load author", "red", 3);
+    } finally {
+      setIsAuthorLoading(false);
+    }
+  };
 
   // websocket connection to get blog updates
   useEffect(() => {
@@ -39,12 +130,14 @@ const BlogDetailPage = () => {
       ws = new WebSocket(wsUrl);
 
       ws.onmessage = (event) => {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         const data = JSON.parse(event.data);
 
         if (data.type === "error") {
           setError(data.error);
-          addToast(data.error, "error", 5);
+          addToast(data.error, "red", 5);
           setIsEditing(false);
           return;
         }
@@ -53,13 +146,15 @@ const BlogDetailPage = () => {
           setBlog(data.blog);
           setIsEditing(false);
 
+          const status = data.blog?.status || "";
+
           // Update current step based on status
-          if (data.blog.status && data.blog.status.startsWith("processing: ")) {
-            const node = data.blog.status.replace("processing: ", "");
+          if (status.startsWith("processing: ")) {
+            const node = status.replace("processing: ", "");
             setCurrentStep(node);
-          } else if (data.blog.status === "completed") {
+          } else if (status === "completed") {
             setCurrentStep("done");
-          } else if (data.blog.status === "failed") {
+          } else if (status === "failed") {
             setCurrentStep("idle");
           }
         }
@@ -74,7 +169,7 @@ const BlogDetailPage = () => {
           return;
         }
         console.error("WebSocket error:", err);
-        addToast("Failed to connect to the blog service.", "error", 5);
+        addToast("Failed to connect to the blog service.", "red", 5);
         setError("Failed to connect to the blog service.");
         setIsEditing(false);
       };
@@ -94,28 +189,13 @@ const BlogDetailPage = () => {
     };
   }, [blogId, backendUrl, addToast]);
 
-  // fetch author username
+  // fetch author username and likes
   useEffect(() => {
-    const fetchAuthorUsername = async () => {
-      if (!blog?.author_id) {
-        return;
-      }
-      setIsAuthorLoading(true);
-      try {
-        const res = await fetch(`${backendUrl}/users/${blog.author_id}`);
-        if (!res.ok) throw new Error("Failed to fetch author");
-        const data = await res.json();
-        if (data.success) setAuthorUsername(data.user.username);
-      } catch (error) {
-        console.error("Error fetching author:", error);
-        addToast("Failed to load author", "error", 3);
-      } finally {
-        setIsAuthorLoading(false);
-      }
-    };
-
-    fetchAuthorUsername();
-  }, [blog]);
+    if (blog && blog.is_generated) {
+      fetchAuthorUsername();
+      fetchLikes();
+    }
+  }, [blog?.id, blog?.is_generated, accessToken]);
 
   if (isEditing) {
     return (
@@ -266,9 +346,9 @@ const BlogDetailPage = () => {
           {/* like, comment, bookmark, share buttons */}
           <div className="flex items-center justify-between border-y border-slate-800 py-4">
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" className="">
-                <Heart className={`w-5 h-5 mr-2`} />
-                {/* {likesCount} */}
+              <Button type="button" variant="ghost" size="sm" onClick={handleBlogLike} className="outline-none focus:outline-none">
+                <Heart fill={isLiked ? "red" : "none"} className={`w-5 h-5 mr-2 ${isLiked ? "text-red-500" : ""}`} />
+                {likes}
               </Button>
               <Button variant="ghost" size="sm">
                 <MessageSquare className="w-5 h-5 mr-2" />

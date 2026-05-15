@@ -1,3 +1,4 @@
+from utils.auth import verify_token
 from fastapi import (
     APIRouter,
     Depends,
@@ -110,6 +111,7 @@ async def generate_blog(
             "content": "",
             "status": "draft",
             "is_generated": False,
+            "num_likes": 0,
             "created_at": datetime.utcnow(),
         }
         result = await db.blogs.insert_one(blog_doc)
@@ -197,14 +199,14 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
                 await websocket.send_json({"type": "error", "error": "Blog not found"})
                 break
 
-            blog["id"] = str(blog["_id"])
-            del blog["_id"]
+            blog["id"] = str(blog.pop("_id"))
             blog["author_id"] = (
                 str(blog["author_id"]) if blog.get("author_id") else None
             )
             blog["created_at"] = (
                 blog.get("created_at").isoformat() if blog.get("created_at") else None
             )
+            blog["num_likes"] = blog.get("num_likes", 0)
 
             await websocket.send_json({"type": "blog", "blog": blog})
 

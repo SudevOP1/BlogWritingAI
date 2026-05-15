@@ -23,9 +23,9 @@ const App = () => {
               <Route  index                 element={<MainPage />} />
               <Route  path="/login"         element={<LoginPage />} />
               <Route  path="/signup"        element={<SignupPage />} />
+              <Route  path="/blog/:blogId"  element={<BlogDetailPage />} />
               <Route  path="/create-blog"   element={<ProtectedRoute><BlogCreationPage /></ProtectedRoute>} />
               <Route  path="/dashboard"     element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route  path="/blog/:blogId"  element={<ProtectedRoute><BlogDetailPage /></ProtectedRoute>} />
               <Route  path="*"              element={<BrokenURL />} />
             </Route>
           </Routes>
