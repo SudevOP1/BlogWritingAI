@@ -36,13 +36,29 @@ async def run_generation(blog_id: str, topic: str):
                 {"$set": {"status": f"processing: {node_name}"}},
             )
 
-            # if plan is generated, update the title
+            # if plan is generated, update the title and save preview for real-time UI updates
             if node_name == "orchestrator" and "plan" in node_data:
                 plan = node_data["plan"]
                 title = getattr(plan, "blog_title", "")
+
+                # make a preview using section headers
+                tasks = getattr(plan, "tasks", []) or []
+                preview = (
+                    f"# {title}\n\n"
+                    + "\n\n".join([f"## {getattr(t, 'title', str(t))}" for t in tasks])
+                    if title
+                    else ""
+                )
+
+                update_fields = {}
                 if title:
+                    update_fields["title"] = title
+                if preview:
+                    update_fields["content"] = preview
+
+                if update_fields:
                     await db.blogs.update_one(
-                        {"_id": ObjectId(blog_id)}, {"$set": {"title": title}}
+                        {"_id": ObjectId(blog_id)}, {"$set": update_fields}
                     )
 
             # if finished, update the DB
@@ -60,6 +76,8 @@ async def run_generation(blog_id: str, topic: str):
 
     except ValueError as e:
         error_str = str(e)
+
+        # invalid topic error
         if "INVALID_TOPIC" in error_str:
             await db.blogs.update_one(
                 {"_id": ObjectId(blog_id)},
@@ -70,7 +88,14 @@ async def run_generation(blog_id: str, topic: str):
                     }
                 },
             )
+
+        # generation errors
         else:
+            debug.error(
+                f"Blog generation error for blog_id={blog_id}",
+                traceback.format_exc(),
+                api_route=True,
+            )
             await db.blogs.update_one(
                 {"_id": ObjectId(blog_id)},
                 {
@@ -81,7 +106,13 @@ async def run_generation(blog_id: str, topic: str):
                 },
             )
 
+    # unexpected errors
     except Exception as e:
+        debug.error(
+            f"500 error during generation for blog_id={blog_id}",
+            traceback.format_exc(),
+            api_route=True,
+        )
         await db.blogs.update_one(
             {"_id": ObjectId(blog_id)},
             {

@@ -26,6 +26,7 @@ const BlogDetailPage = () => {
   const [isEditing, setIsEditing] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState("idle");
+  const [showCompletionUI, setShowCompletionUI] = useState(false);
 
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
@@ -136,6 +137,7 @@ const BlogDetailPage = () => {
     const connectToBlog = () => {
       const wsUrl = backendUrl.replace(/^http/, "ws") + `/blogs/${blogId}`;
       ws = new WebSocket(wsUrl);
+      let isFirstMessage = true;
 
       ws.onmessage = (event) => {
         if (!isMounted) {
@@ -158,6 +160,8 @@ const BlogDetailPage = () => {
           setIsEditing(false);
 
           const status = data.blog?.status || "";
+          const wasAlreadyDone = isFirstMessage && (status === "completed" || status === "failed");
+          isFirstMessage = false;
 
           // Update current step based on status
           if (status.startsWith("processing: ")) {
@@ -165,12 +169,28 @@ const BlogDetailPage = () => {
             setCurrentStep(node);
           } else if (status === "completed") {
             setCurrentStep("done");
+            setIsEditing(false);
+            // Only show completion UI if this is a live transition, not a reload
+            if (!wasAlreadyDone) {
+              setShowCompletionUI(true);
+              setTimeout(() => {
+                if (isMounted) setShowCompletionUI(false);
+              }, 3000);
+            }
           } else if (status === "failed") {
-            setCurrentStep("idle");
+            setCurrentStep("failed");
+            setIsEditing(false);
+            // Only show failure UI if this is a live transition, not a reload
+            if (!wasAlreadyDone) {
+              setShowCompletionUI(true);
+              setTimeout(() => {
+                if (isMounted) setShowCompletionUI(false);
+              }, 3000);
+            }
           }
         }
 
-        if (data.blog?.status in ["completed", "failed"]) {
+        if (data.blog?.status === "completed" || data.blog?.status === "failed") {
           ws.close();
         }
       };
@@ -204,7 +224,7 @@ const BlogDetailPage = () => {
 
   // fetch authorUsername, numLikes
   useEffect(() => {
-    if (blog && blog.status in ["completed", "failed"]) {
+    if (blog && (blog.status === "completed" || blog.status === "failed")) {
       fetchAuthorUsername();
       fetchLikes();
     }
@@ -236,12 +256,29 @@ const BlogDetailPage = () => {
     return <div className="text-center py-20">Blog not found</div>;
   }
 
-  // Show generating UI if not finished
-  if (!(blog.status in ["completed", "failed"])) {
+  if (blog.status === "failed" && !showCompletionUI) {
+    return (
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-4rem)] text-center px-4">
+        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 max-w-md">
+          <h2 className="text-xl font-bold text-red-400 mb-2">Blog Generation Failed</h2>
+          <p className="text-slate-400">{blog.error_message}</p>
+          <Link to="/" className="mt-6 inline-block text-primary hover:underline">
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show generating UI if not finished, OR if in the 3-second completion transition
+  if (!(blog.status === "completed" || blog.status === "failed") || showCompletionUI) {
+    const isCompleted = blog.status === "completed" && showCompletionUI;
+    const isFailed = blog.status === "failed" && showCompletionUI;
+
     return (
       <div className="container mx-auto px-4 py-8 min-h-[calc(100vh-4rem)]">
-        <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+        <Link to="/" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white mb-6 transition">
+          <ArrowLeft className="w-4 h-4" />
           Back to Feed
         </Link>
 
@@ -249,8 +286,23 @@ const BlogDetailPage = () => {
           {/* Left Panel: Progress */}
           <div className="w-full lg:w-1/3 flex flex-col gap-6">
             <div className="bg-surface rounded-xl p-6 border border-slate-800 shadow-xl">
-              <h2 className="text-2xl font-semibold mb-2">Generating Blog</h2>
-              <p className="text-slate-400 mb-6">AI is crafting your masterpiece. This might take a minute.</p>
+              {isCompleted ? (
+                <div className="flex items-center gap-3 mb-2">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 shrink-0" />
+                  <h2 className="text-2xl font-semibold text-green-400">Blog Ready!</h2>
+                </div>
+              ) : isFailed ? (
+                <h2 className="text-2xl font-semibold mb-2 text-red-400">Generation Failed</h2>
+              ) : (
+                <h2 className="text-2xl font-semibold mb-2">Generating Blog</h2>
+              )}
+              <p className="text-slate-400 mb-6">
+                {isCompleted
+                  ? "Your blog has been generated successfully."
+                  : isFailed
+                    ? "Something went wrong during generation."
+                    : "AI is crafting your masterpiece. This might take a minute."}
+              </p>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-400 uppercase tracking-wider">Topic</label>
@@ -264,23 +316,25 @@ const BlogDetailPage = () => {
               <div className="space-y-4">
                 {steps.map((step, idx) => {
                   const stepIndex = steps.findIndex((s) => s.id === currentStep);
-                  const isPast = stepIndex > idx || currentStep === "done";
+                  const isPast = currentStep === "done" || currentStep === "failed" || stepIndex > idx;
                   const isCurrent = step.id === currentStep;
 
                   return (
                     <div key={step.id} className="flex items-center space-x-3">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300
                         ${
                           isPast
-                            ? "border-green-500 bg-green-500/10"
+                            ? isFailed
+                              ? "border-red-500 bg-red-500/10"
+                              : "border-green-500 bg-green-500/10"
                             : isCurrent
                               ? "border-primary bg-primary/10"
                               : "border-slate-700"
                         }`}
                       >
                         {isPast ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className={`w-4 h-4 ${isFailed ? "text-red-500" : "text-green-500"}`} />
                         ) : isCurrent ? (
                           <Loader className="w-4 h-4" />
                         ) : (
@@ -292,6 +346,19 @@ const BlogDetailPage = () => {
                   );
                 })}
               </div>
+
+              {/* Completion banner */}
+              {isCompleted && (
+                <div className="mt-6 flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3 animate-pulse">
+                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                  <span className="text-green-400 text-sm font-medium">All steps completed successfully</span>
+                </div>
+              )}
+              {isFailed && (
+                <div className="mt-6 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+                  <span className="text-red-400 text-sm font-medium">Generation encountered an error</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -302,9 +369,14 @@ const BlogDetailPage = () => {
                 <FileText className="w-5 h-5 text-primary" />
                 <span className="font-medium">Live Preview</span>
               </div>
+              {isCompleted && (
+                <span className="text-xs text-green-400 font-medium bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">
+                  ✓ Complete
+                </span>
+              )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-slate-900/30">
+            <div className="flex-1 overflow-y-auto px-6 lg:px-10 custom-scrollbar bg-slate-900/30">
               {blog.content ? (
                 <article className="markdown-body max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
@@ -325,8 +397,8 @@ const BlogDetailPage = () => {
   // Normal return for generated blog
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-7">
-      <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white transition-colors group">
-        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-2 group-hover:scale-130 transition" />
+      <Link to="/" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white transition">
+        <ArrowLeft className="w-4 h-4" />
         Back to Feed
       </Link>
 

@@ -14,12 +14,12 @@ def router_node(state: State, config=None) -> dict:
     content_ok, content = invoke_ai_with_retries(prompt=prompt)
 
     if not content_ok:
-        raise ValueError(f"Router returned invalid response.\nError: {content}")
+        raise ValueError(f"Router Error: {content}")
 
     content = content.strip().strip("```json").strip("```")
 
     if '"error":' in content:
-        raise ValueError(f"Error: {content}")
+        raise ValueError(f"Router Error: {content}")
 
     # parse the json response into a RouterDecision object
     router_decision_dict = json.loads(content)
@@ -82,12 +82,18 @@ def orchestrator_node(state: State, config=None) -> dict:
     content_ok, content = invoke_ai_with_retries(prompt=prompt)
 
     if not content_ok:
-        raise ValueError(f"Orchestrator returned invalid response.\nError: {content}")
+        raise ValueError(f"Orchestrator Error: {content}")
 
     # parse the json response into a Plan object
     content = content.strip().strip("```json").strip("```")
     plan_dict = json.loads(content)
     plan = Plan(**plan_dict)
+
+    # set attributes in state for real-time updates in UI
+    state.final = f"# {plan.blog_title}\n\n" + "\n\n".join(
+        [f"## {task.title}" for task in plan.tasks]
+    )
+    state.plan = plan
 
     return {"plan": plan}
 
@@ -128,9 +134,7 @@ def worker_node(state: State, config=None) -> dict:
         section_ok, section_md = invoke_ai_with_retries(prompt=prompt)
 
         if not section_ok:
-            raise ValueError(
-                f"Worker returned invalid response.\nError: {section_md.strip()}"
-            )
+            raise ValueError(f"Worker Error: {section_md.strip()}")
 
         sections.append(section_md.strip())
 
