@@ -12,7 +12,6 @@ class BlogModel(BaseModel):
     title: str = ""
     content: str = ""
     status: str = "draft"
-    is_generated: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
     num_likes: int = 0
 
@@ -28,6 +27,8 @@ class CommentModel(BaseModel):
     parent_id: Optional[PyObjectId] = None
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    num_likes: int = 0
+    num_replies: int = 0
 
 
 class LikeModel(BaseModel):

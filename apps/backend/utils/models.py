@@ -17,8 +17,8 @@ class BlogStatusUpdate(BaseModel):
 
 
 class CommentRequest(BaseModel):
-    content: str
     parent_id: Optional[str] = None
+    content: str
 
 
 class BookmarkResponse(BaseModel):

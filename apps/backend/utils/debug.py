@@ -25,31 +25,37 @@ def create_log_file_if_not_exists() -> None:
                 f.write("\n")
 
 
-def log(name: str, msg: str) -> None:
+def log(name: str, msg: str, api_route: bool = False) -> None:
     if DEBUG:
-        formatted_msg = msg.replace("\n", "\\n").replace(",", " ")
+        formatted_msg = msg.replace("\n", "\\n").replace(",", " ").strip()
         small_msg = (
             formatted_msg[:50] + "..." + formatted_msg[-20:]
             if len(formatted_msg) > 70
             else formatted_msg
         )
 
-        print(f"[{yellow}{name}{clear}] {small_msg}")
+        if not api_route:
+            print(f"[{red}{name}{clear}] {small_msg}")
+        else:
+            print(f"{red}{name}{clear} {small_msg}")
 
         with open(LOG_FILEPATH, "a") as f:
             f.write(f"{datetime.datetime.now()},LOG,{name.strip()},{formatted_msg}\n")
 
 
-def error(name: str, error: str) -> None:
+def error(name: str, error: str, api_route: bool = False) -> None:
     if DEBUG:
-        formatted_error = error.replace("\n", "\\n").replace(",", " ")
+        formatted_error = error.replace("\n", "\\n").replace(",", " ").strip()
         small_error = (
             formatted_error[:50] + "..." + formatted_error[-20:]
             if len(formatted_error) > 70
             else formatted_error
         )
 
-        print(f"[{red}{name}{clear}] {small_error}")
+        if not api_route:
+            print(f"[{red}{name}{clear}] {small_error}")
+        else:
+            print(f"{red}{name}{clear} {small_error}")
 
         with open(LOG_FILEPATH, "a") as f:
             f.write(

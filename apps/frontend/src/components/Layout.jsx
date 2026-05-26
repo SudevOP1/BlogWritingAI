@@ -1,5 +1,5 @@
-import Navbar from "./Navbar";
-import Footer from "./Footer";
+import Navbar from "./ui/Navbar.jsx";
+import Footer from "./ui/Footer.jsx";
 import { Outlet } from "react-router-dom";
 import { useToastContext } from "../context/ToastContext.jsx";
 import Toast from "./ui/Toast.jsx";

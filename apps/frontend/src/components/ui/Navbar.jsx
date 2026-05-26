@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { PenSquare, User, LogOut } from "lucide-react";
-import Button from "./ui/Button";
-import { useAuthContext } from "../context/AuthContext";
+import { PenSquare, User, LogOut, PenTool } from "lucide-react";
+import Button from "./Button.jsx";
+import { useAuthContext } from "../../context/AuthContext.jsx";
 
 const Navbar = () => {
   const { user, logoutUser } = useAuthContext();
@@ -18,7 +18,8 @@ const Navbar = () => {
 
         <div className="flex items-center space-x-4">
           <Link to="/create-blog">
-            <Button variant="ghost" className="text-slate-300 hover:text-white">
+            <Button variant="ghost" size="sm">
+              <PenTool className="w-4 h-4 mr-2" />
               Create Blog
             </Button>
           </Link>

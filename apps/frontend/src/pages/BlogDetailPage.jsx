@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2 } from "lucide-react";
+import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import Button from "../components/ui/Button";
-import { useAuthContext } from "../context/AuthContext";
-import { useToastContext } from "../context/ToastContext";
-import Loader from "../components/ui/Loader";
+
+import { useAuthContext } from "../context/AuthContext.jsx";
+import { useToastContext } from "../context/ToastContext.jsx";
+import Button from "../components/ui/Button.jsx";
+import Loader from "../components/ui/Loader.jsx";
+import CommentsSection from "../components/CommentsSection.jsx";
 
 const steps = [
   { id: "router", label: "Analyzing Topic" },
@@ -18,7 +20,7 @@ const steps = [
 
 const BlogDetailPage = () => {
   const { blogId } = useParams();
-  const { backendUrl, accessToken } = useAuthContext();
+  const { backendUrl, accessToken, username } = useAuthContext();
 
   const [blog, setBlog] = useState(null);
   const [isEditing, setIsEditing] = useState(true);
@@ -27,7 +29,7 @@ const BlogDetailPage = () => {
 
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
-  const [likes, setLikes] = useState(0);
+  const [numLikes, setNumLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isLikesLoading, setIsLikesLoading] = useState(true);
 
@@ -43,9 +45,9 @@ const BlogDetailPage = () => {
 
     // Optimistic update
     const oldIsLiked = isLiked;
-    const oldLikes = likes;
+    const oldLikes = numLikes;
     setIsLiked(!oldIsLiked);
-    setLikes((prev) => (oldIsLiked ? prev - 1 : prev + 1));
+    setNumLikes((prev) => (oldIsLiked ? prev - 1 : prev + 1));
 
     try {
       const res = await fetch(`${backendUrl}/community/blogs/${blogId}/like`, {
@@ -59,7 +61,8 @@ const BlogDetailPage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error || "Failed to like");
+        console.error("Backend validation failed:", data.error);
+        throw new Error("Failed to like");
       }
       // Refresh with actual count from server
       await fetchLikes();
@@ -68,7 +71,7 @@ const BlogDetailPage = () => {
       addToast("Failed to like blog", "red", 3);
       // Rollback
       setIsLiked(oldIsLiked);
-      setLikes(oldLikes);
+      setNumLikes(oldLikes);
     }
   };
 
@@ -81,13 +84,15 @@ const BlogDetailPage = () => {
         },
       });
       if (!res.ok) {
-        addToast("Failed to fetch likes", "red", 3);
-        return;
+        throw new Error("Failed to fetch likes");
       }
       const data = await res.json();
       if (data.success) {
-        setLikes(data.num_likes);
+        setNumLikes(data.num_likes);
         setIsLiked(data.liked ?? false);
+      } else {
+        console.error("Backend validation failed:", data.error);
+        throw new Error("Failed to fetch likes");
       }
     } catch (error) {
       console.error("Error fetching likes:", error);
@@ -105,12 +110,14 @@ const BlogDetailPage = () => {
     try {
       const res = await fetch(`${backendUrl}/users/${blog.author_id}`);
       if (!res.ok) {
-        addToast("Failed to fetch author", "red", 3);
-        return;
+        throw new Error("Failed to fetch author");
       }
       const data = await res.json();
       if (data.success) {
         setAuthorUsername(data.user.username);
+      } else {
+        console.error("Backend validation failed:", data.error);
+        throw new Error("Failed to fetch author");
       }
     } catch (error) {
       console.error("Error fetching author:", error);
@@ -124,6 +131,7 @@ const BlogDetailPage = () => {
   useEffect(() => {
     let ws = null;
     let isMounted = true;
+    let hasFailed = false;
 
     const connectToBlog = () => {
       const wsUrl = backendUrl.replace(/^http/, "ws") + `/blogs/${blogId}`;
@@ -136,13 +144,16 @@ const BlogDetailPage = () => {
         const data = JSON.parse(event.data);
 
         if (data.type === "error") {
+          hasFailed = true;
           setError(data.error);
           addToast(data.error, "red", 5);
           setIsEditing(false);
+          ws.close();
           return;
         }
 
         if (data.type === "blog") {
+          console.log(data.blog);
           setBlog(data.blog);
           setIsEditing(false);
 
@@ -159,16 +170,18 @@ const BlogDetailPage = () => {
           }
         }
 
-        if (data.blog?.is_generated) {
+        if (data.blog?.status in ["completed", "failed"]) {
           ws.close();
         }
       };
 
       ws.onerror = (err) => {
-        if (!isMounted) {
+        if (!isMounted || hasFailed) {
           return;
         }
+
         console.error("WebSocket error:", err);
+        hasFailed = true;
         addToast("Failed to connect to the blog service.", "red", 5);
         setError("Failed to connect to the blog service.");
         setIsEditing(false);
@@ -187,15 +200,15 @@ const BlogDetailPage = () => {
         ws.close();
       }
     };
-  }, [blogId, backendUrl, addToast]);
+  }, [blogId, backendUrl]);
 
-  // fetch author username and likes
+  // fetch authorUsername, numLikes
   useEffect(() => {
-    if (blog && blog.is_generated) {
+    if (blog && blog.status in ["completed", "failed"]) {
       fetchAuthorUsername();
       fetchLikes();
     }
-  }, [blog?.id, blog?.is_generated, accessToken]);
+  }, [blog?.id, blog?.status, accessToken]);
 
   if (isEditing) {
     return (
@@ -219,10 +232,12 @@ const BlogDetailPage = () => {
     );
   }
 
-  if (!blog) return <div className="text-center py-20">Blog not found</div>;
+  if (!blog) {
+    return <div className="text-center py-20">Blog not found</div>;
+  }
 
   // Show generating UI if not finished
-  if (!blog.is_generated) {
+  if (!(blog.status in ["completed", "failed"])) {
     return (
       <div className="container mx-auto px-4 py-8 min-h-[calc(100vh-4rem)]">
         <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-6 transition-colors">
@@ -346,13 +361,23 @@ const BlogDetailPage = () => {
           {/* like, comment, bookmark, share buttons */}
           <div className="flex items-center justify-between border-y border-slate-800 py-4">
             <div className="flex items-center space-x-2">
-              <Button type="button" variant="ghost" size="sm" onClick={handleBlogLike} className="outline-none focus:outline-none">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleBlogLike}
+                className="outline-none focus:outline-none"
+              >
                 <Heart fill={isLiked ? "red" : "none"} className={`w-5 h-5 mr-2 ${isLiked ? "text-red-500" : ""}`} />
-                {likes}
+                {numLikes}
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => document.getElementById("comments-section").scrollIntoView({ behavior: "smooth" })}
+              >
                 <MessageSquare className="w-5 h-5 mr-2" />
-                {/* {blog.comments_count} */}
+                {blog.num_comments || 0}
               </Button>
               <Button variant="ghost" size="sm">
                 <Bookmark className="w-5 h-5" />
@@ -371,9 +396,8 @@ const BlogDetailPage = () => {
       </article>
 
       {/* comments section */}
-      <section className="pt-8 border-t border-slate-800">
-        <h3 className="text-2xl font-bold mb-6">Comments ({blog.comments_count || 0})</h3>
-        <div className="bg-surface rounded-lg p-6 text-center text-slate-500">Comments feature coming soon.</div>
+      <section className="pt-8 border-t border-slate-800" id="comments-section">
+        <CommentsSection blogId={blogId} />
       </section>
     </div>
   );

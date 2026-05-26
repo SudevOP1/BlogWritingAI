@@ -1,8 +1,10 @@
 from fastapi import APIRouter
+import traceback
 
 from utils.db import db
 from utils.auth import verify_password, create_access_token, create_user
 from utils.models import LoginRequest, SignupRequest
+from utils import debug
 
 auth_router = APIRouter()
 
@@ -31,6 +33,11 @@ async def signup(body: SignupRequest):
         }
 
     except Exception as e:
+        debug.error(
+            f"500 POST /auth/signup",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -59,6 +66,11 @@ async def login(body: LoginRequest):
         }
 
     except Exception as e:
+        debug.error(
+            f"500 POST /auth/login",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",

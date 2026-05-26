@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from bson import ObjectId
+import traceback
 
 from utils.auth import get_current_user
 from utils.db import db
+from utils import debug
 
 user_router = APIRouter()
 
@@ -25,6 +27,11 @@ async def get_my_blogs(current_user: dict = Depends(get_current_user)):
         return {"success": True, "blogs": blogs}
 
     except Exception as e:
+        debug.error(
+            f"500 GET /users/me/blogs",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -52,6 +59,11 @@ async def add_bookmark(blog_id: str, current_user: dict = Depends(get_current_us
         return {"success": True, "message": "Bookmark added"}
 
     except Exception as e:
+        debug.error(
+            f"500 POST /users/bookmarks/{blog_id}",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -71,6 +83,11 @@ async def remove_bookmark(blog_id: str, current_user: dict = Depends(get_current
         return {"success": True, "message": "Bookmark removed"}
 
     except Exception as e:
+        debug.error(
+            f"500 DELETE /users/bookmarks/{blog_id}",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -102,6 +119,11 @@ async def get_bookmarks(current_user: dict = Depends(get_current_user)):
         return {"success": True, "blogs": blogs}
 
     except Exception as e:
+        debug.error(
+            f"500 GET /users/bookmarks",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -125,6 +147,11 @@ async def search_users(q: str = ""):
 
         return {"success": True, "users": users}
     except Exception as e:
+        debug.error(
+            f"500 GET /users/search",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -150,6 +177,11 @@ async def get_user_details(user_id: str):
             "user": {"id": str(user["_id"]), "username": user["username"]},
         }
     except Exception as e:
+        debug.error(
+            f"500 GET /users/{user_id}",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",

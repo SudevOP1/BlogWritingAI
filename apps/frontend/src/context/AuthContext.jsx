@@ -26,22 +26,31 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state from localStorage
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+    const storedUsername = localStorage.getItem("username");
+
     if (token) {
       try {
         const decoded = jwtDecode(token);
+
         // Check if token is expired
         if (decoded.exp * 1000 < Date.now()) {
           // Token expired, clear it
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("username");
           setAccessToken(null);
           setUser(null);
+          setUsername(null);
         } else {
           setAccessToken(token);
           setUser(decoded);
+          if (storedUsername) {
+            setUsername(storedUsername);
+          }
         }
       } catch (error) {
         console.error("Error decoding token:", error);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("username");
       }
     }
     setLoading(false);

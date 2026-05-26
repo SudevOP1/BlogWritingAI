@@ -1,4 +1,3 @@
-from utils.auth import verify_token
 from fastapi import (
     APIRouter,
     Depends,
@@ -10,11 +9,13 @@ from fastapi import (
 from bson import ObjectId
 from datetime import datetime
 import asyncio
+import traceback
 
 from utils.auth import get_current_user
 from utils.db import db
 from blog_generator.graph.blog_graph import build_app
 from utils.models import BlogStatusUpdate
+from utils import debug
 
 blog_router = APIRouter()
 
@@ -52,7 +53,6 @@ async def run_generation(blog_id: str, topic: str):
                     {
                         "$set": {
                             "content": final_content,
-                            "is_generated": True,
                             "status": "completed",
                         }
                     },
@@ -67,7 +67,6 @@ async def run_generation(blog_id: str, topic: str):
                     "$set": {
                         "status": "failed",
                         "error_message": "Invalid topic",
-                        "is_generated": True,
                     }
                 },
             )
@@ -78,7 +77,6 @@ async def run_generation(blog_id: str, topic: str):
                     "$set": {
                         "status": "failed",
                         "error_message": error_str,
-                        "is_generated": True,
                     }
                 },
             )
@@ -90,7 +88,6 @@ async def run_generation(blog_id: str, topic: str):
                 "$set": {
                     "status": "failed",
                     "error_message": str(e),
-                    "is_generated": True,
                 }
             },
         )
@@ -103,15 +100,15 @@ async def generate_blog(
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        # create draft blog
+        # create blog
         blog_doc = {
             "author_id": ObjectId(current_user["id"]),
             "topic": topic,
             "title": "",
             "content": "",
             "status": "draft",
-            "is_generated": False,
             "num_likes": 0,
+            "num_comments": 0,
             "created_at": datetime.utcnow(),
         }
         result = await db.blogs.insert_one(blog_doc)
@@ -123,6 +120,11 @@ async def generate_blog(
         return {"success": True, "blog_id": blog_id}
 
     except Exception as e:
+        debug.error(
+            f"500 POST /blogs/generate",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -153,6 +155,11 @@ async def update_blog_status(
         return {"success": True, "message": f"Blog status updated to {body.status}"}
 
     except Exception as e:
+        debug.error(
+            f"500 PUT /blogs/{blog_id}",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -182,6 +189,11 @@ async def get_public_blogs(skip: int = 0, limit: int = 10):
         return {"success": True, "blogs": blogs}
 
     except Exception as e:
+        debug.error(
+            f"500 GET /blogs",
+            traceback.format_exc(),
+            api_route=True,
+        )
         return {
             "success": False,
             "error": f"something went wrong: {str(e)}",
@@ -193,6 +205,11 @@ async def get_public_blogs(skip: int = 0, limit: int = 10):
 async def blog_websocket(websocket: WebSocket, blog_id: str):
     await websocket.accept()
     try:
+        if not ObjectId.is_valid(blog_id):
+            await websocket.send_json({"type": "error", "error": "Blog not found"})
+            await websocket.close()
+            return
+
         while True:
             blog = await db.blogs.find_one({"_id": ObjectId(blog_id)})
             if not blog:
@@ -207,10 +224,11 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
                 blog.get("created_at").isoformat() if blog.get("created_at") else None
             )
             blog["num_likes"] = blog.get("num_likes", 0)
+            blog["num_comments"] = blog.get("num_comments", 0)
 
             await websocket.send_json({"type": "blog", "blog": blog})
 
-            if blog.get("is_generated"):
+            if blog.get("status", "") in ["completed", "failed"]:
                 break
 
             await asyncio.sleep(1)
@@ -221,6 +239,11 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
         try:
             await websocket.send_json({"type": "error", "error": str(e)})
         except Exception:
+            debug.error(
+                f"500 WS /blogs/{blog_id}",
+                traceback.format_exc(),
+                api_route=True,
+            )
             pass  # cannot send error
     finally:
         try:
