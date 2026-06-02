@@ -7,7 +7,7 @@ const Navbar = () => {
   const { user, logoutUser } = useAuthContext();
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-background/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-background/40 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <div className="bg-primary p-1.5 rounded-lg">

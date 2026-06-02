@@ -8,6 +8,7 @@ class LoginRequest(BaseModel):
 
 
 class SignupRequest(BaseModel):
+    display_name: str
     username: str
     password: str
 

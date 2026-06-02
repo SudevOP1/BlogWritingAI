@@ -21,12 +21,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [username, setUsername] = useState(null);
+  const [displayName, setDisplayName] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
 
   // Initialize auth state from localStorage
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     const storedUsername = localStorage.getItem("username");
+    const storedDisplayName = localStorage.getItem("displayName");
 
     if (token) {
       try {
@@ -37,26 +39,32 @@ export const AuthProvider = ({ children }) => {
           // Token expired, clear it
           localStorage.removeItem("accessToken");
           localStorage.removeItem("username");
+          localStorage.removeItem("displayName");
           setAccessToken(null);
           setUser(null);
           setUsername(null);
+          setDisplayName(null);
         } else {
           setAccessToken(token);
           setUser(decoded);
           if (storedUsername) {
             setUsername(storedUsername);
           }
+          if (storedDisplayName) {
+            setDisplayName(storedDisplayName);
+          }
         }
       } catch (error) {
         console.error("Error decoding token:", error);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("username");
+        localStorage.removeItem("displayName");
       }
     }
     setLoading(false);
   }, []);
 
-  const signupUser = async (username = "", password = "") => {
+  const signupUser = async (username = "", displayName = "", password = "") => {
     setLoading(true);
 
     try {
@@ -67,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({
           username: username,
+          display_name: displayName,
           password: password,
         }),
       });
@@ -77,7 +86,7 @@ export const AuthProvider = ({ children }) => {
         addToast("Signup successful! Please login to continue.", "green", 5);
         navigate("/login");
       } else {
-        addToast("Signup failed: " + (data.error || "invalid credentials"), "red", 5);
+        addToast("Signup failed: " + data.error, "red", 5);
       }
     } catch (error) {
       console.error("/auth/signup error:", error);
@@ -111,10 +120,13 @@ export const AuthProvider = ({ children }) => {
         setAccessToken(token);
         setUser(decoded);
         setUsername(username);
+        setDisplayName(data.display_name);
+
         localStorage.setItem("accessToken", token);
         localStorage.setItem("username", username);
+        localStorage.setItem("displayName", data.display_name);
 
-        addToast(`Login successful, Welcome ${decoded.username}`, "green", 4);
+        addToast(`Login successful, Welcome ${data.display_name}`, "green", 4);
         navigate(navigateTo);
       } else {
         addToast("Login failed: " + (data.error || "invalid credentials"), "red", 5);
@@ -131,8 +143,11 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(null);
     setUser(null);
     setUsername(null);
+    setDisplayName(null);
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("username");
+    localStorage.removeItem("displayName");
 
     addToast("Logged out!", "green", 3);
     navigate("/login");
@@ -141,6 +156,7 @@ export const AuthProvider = ({ children }) => {
   const contextData = {
     user: user,
     username: username,
+    displayName: displayName,
     backendUrl: backendUrl,
     accessToken: accessToken,
     signupUser: signupUser,

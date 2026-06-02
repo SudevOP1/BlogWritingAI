@@ -21,13 +21,18 @@ async def signup(body: SignupRequest):
                 "status_code": 409,
             }
 
-        user = await create_user(username=body.username, password=body.password)
+        user = await create_user(
+            username=body.username,
+            display_name=body.display_name,
+            password=body.password,
+        )
 
         return {
             "success": True,
             "user": {
-                "username": user.get("username"),
                 "id": str(user.get("_id")),
+                "username": user.get("username"),
+                "display_name": user.get("display_name"),
                 "created_at": user.get("created_at").isoformat(),
             },
         }
@@ -63,6 +68,8 @@ async def login(body: LoginRequest):
             "success": True,
             "access_token": access_token,
             "token_type": "bearer",
+            "username": user.get("username"),
+            "display_name": user.get("display_name"),
         }
 
     except Exception as e:

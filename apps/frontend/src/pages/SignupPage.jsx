@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
-import { PenSquare } from "lucide-react";
+import { Eye, EyeOff, PenSquare } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext";
 
 const SignupPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const { accessToken, signupUser, loading } = useAuthContext();
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await signupUser(username, password, "/login");
+    await signupUser(username, displayName, password, "/login");
   };
 
   return (
@@ -37,6 +39,19 @@ const SignupPage = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <Input
+              type="text"
+              placeholder="John Doe"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Username <span className="text-red-400">*</span>
             </label>
             <Input type="text" placeholder="johndoe" value={username} onChange={(e) => setUsername(e.target.value)} required />
@@ -46,7 +61,26 @@ const SignupPage = () => {
             <label className="block text-sm font-medium text-slate-300 mb-1">
               Password <span className="text-red-400">*</span>
             </label>
-            <Input type="password" placeholder="•••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div className="relative">
+              <Input
+                type={passwordVisible ? "text" : "password"}
+                placeholder="•••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              {passwordVisible ? (
+                <EyeOff
+                  className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                  onClick={() => setPasswordVisible(!passwordVisible)}
+                />
+              ) : (
+                <Eye
+                  className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                  onClick={() => setPasswordVisible(!passwordVisible)}
+                />
+              )}
+            </div>
           </div>
 
           <Button type="submit" className="w-full mt-6" isLoading={loading}>

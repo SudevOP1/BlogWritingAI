@@ -21,6 +21,8 @@ const steps = [
 const BlogDetailPage = () => {
   const { blogId } = useParams();
   const { backendUrl, accessToken, username } = useAuthContext();
+  const { addToast } = useToastContext();
+  const navigate = useNavigate();
 
   const [blog, setBlog] = useState(null);
   const [isEditing, setIsEditing] = useState(true);
@@ -30,12 +32,8 @@ const BlogDetailPage = () => {
 
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
-  const [numLikes, setNumLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isLikesLoading, setIsLikesLoading] = useState(true);
-
-  const { addToast } = useToastContext();
-  const navigate = useNavigate();
 
   const handleBlogLike = async () => {
     if (!accessToken) {
@@ -46,9 +44,9 @@ const BlogDetailPage = () => {
 
     // Optimistic update
     const oldIsLiked = isLiked;
-    const oldLikes = numLikes;
+    const oldLikes = blog.num_likes;
     setIsLiked(!oldIsLiked);
-    setNumLikes((prev) => (oldIsLiked ? prev - 1 : prev + 1));
+    setBlog((prev) => ({ ...prev, num_likes: oldIsLiked ? prev.num_likes - 1 : prev.num_likes + 1 }));
 
     try {
       const res = await fetch(`${backendUrl}/community/blogs/${blogId}/like`, {
@@ -65,39 +63,46 @@ const BlogDetailPage = () => {
         console.error("Backend validation failed:", data.error);
         throw new Error("Failed to like");
       }
-      // Refresh with actual count from server
-      await fetchLikes();
     } catch (error) {
       console.error("Error liking blog:", error);
       addToast("Failed to like blog", "red", 3);
       // Rollback
       setIsLiked(oldIsLiked);
-      setNumLikes(oldLikes);
+      setBlog((prev) => ({ ...prev, num_likes: oldLikes }));
     }
   };
 
-  const fetchLikes = async () => {
+  const fetchIsLiked = async () => {
+    if (!blog?.id) {
+      return;
+    }
+
+    if (!accessToken) {
+      setIsLiked(false);
+      setIsLikesLoading(false);
+      return;
+    }
+
     setIsLikesLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/community/blogs/${blogId}/likes`, {
+      const res = await fetch(`${backendUrl}/community/blogs/${blog.id}/is_liked`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
       if (!res.ok) {
-        throw new Error("Failed to fetch likes");
+        throw new Error("Failed to check like status");
       }
       const data = await res.json();
-      if (data.success) {
-        setNumLikes(data.num_likes);
-        setIsLiked(data.liked ?? false);
-      } else {
+      if (!data.success) {
         console.error("Backend validation failed:", data.error);
-        throw new Error("Failed to fetch likes");
+        throw new Error("Failed to check like status");
       }
+      setIsLiked(data.liked);
     } catch (error) {
-      console.error("Error fetching likes:", error);
-      addToast("Failed to load likes", "red", 3);
+      console.error("Error checking like status:", error);
+      addToast("Failed to check like status", "red", 3);
     } finally {
       setIsLikesLoading(false);
     }
@@ -222,11 +227,11 @@ const BlogDetailPage = () => {
     };
   }, [blogId, backendUrl]);
 
-  // fetch authorUsername, numLikes
+  // fetch authorUsername, isLiked
   useEffect(() => {
     if (blog && (blog.status === "completed" || blog.status === "failed")) {
       fetchAuthorUsername();
-      fetchLikes();
+      fetchIsLiked();
     }
   }, [blog?.id, blog?.status, accessToken]);
 
@@ -270,7 +275,7 @@ const BlogDetailPage = () => {
     );
   }
 
-  // Show generating UI if not finished, OR if in the 3-second completion transition
+  // show generating UI if not finished, or if in the 3-second completion transition
   if (!(blog.status === "completed" || blog.status === "failed") || showCompletionUI) {
     const isCompleted = blog.status === "completed" && showCompletionUI;
     const isFailed = blog.status === "failed" && showCompletionUI;
@@ -394,78 +399,75 @@ const BlogDetailPage = () => {
     );
   }
 
-  // Normal return for generated blog
+  // normal return for generated blog
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-7">
+    <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col">
+      {/* Back to Feed button */}
       <Link to="/" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white transition">
         <ArrowLeft className="w-4 h-4" />
         Back to Feed
       </Link>
 
-      <article className="flex flex-col gap-5">
-        <header className="flex flex-col gap-8">
-          {/* title */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">{blog.title}</h1>
+      <span className="mt-7 inline-flex w-fit text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full tracking-wide">
+        {blog.topic}
+      </span>
 
-          {/* author details */}
-          <div className="flex flex-row gap-4 items-center">
-            <div
-              className="flex flex-row gap-4 items-center cursor-pointer"
-              onClick={() => authorUsername && navigate(`/user/${blog.author_id}`)}
-            >
-              {isAuthorLoading ? (
-                <div className="flex items-center gap-4 animate-pulse">
-                  <div className="w-10 h-10 rounded-full bg-slate-800" />
-                  <div className="h-5 bg-slate-800 rounded-md w-24" />
+      {/* title */}
+      <h1 className="mt-4 text-4xl md:text-5xl font-bold text-white leading-tight">{blog.title}</h1>
+
+      {/* author details and metadata */}
+      <div className="mt-7 flex flex-row items-center justify-between border-y border-slate-800 py-4">
+        <div className="flex flex-row gap-4 items-center">
+          <div
+            className="flex flex-row gap-4 items-center cursor-pointer"
+            onClick={() => authorUsername && navigate(`/user/${blog.author_id}`)}
+          >
+            {isAuthorLoading ? (
+              <div className="flex items-center gap-4 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-slate-800" />
+                <div className="h-5 bg-slate-800 rounded-md w-24" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg border border-primary/10">
+                  {authorUsername?.[0]?.toUpperCase() || "A"}
                 </div>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg border border-primary/10">
-                    {authorUsername?.[0]?.toUpperCase() || "A"}
-                  </div>
-                  <span className="text-primary text-xl font-medium">{authorUsername}</span>
-                </div>
-              )}
-            </div>
-            <p className="text-slate-500 text-md">{new Date(blog.created_at).toLocaleDateString()}</p>
+                <span className="text-primary text-xl font-medium">{authorUsername}</span>
+              </div>
+            )}
           </div>
-
-          {/* like, comment, bookmark, share buttons */}
-          <div className="flex items-center justify-between border-y border-slate-800 py-4">
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleBlogLike}
-                className="outline-none focus:outline-none"
-              >
-                <Heart fill={isLiked ? "red" : "none"} className={`w-5 h-5 mr-2 ${isLiked ? "text-red-500" : ""}`} />
-                {numLikes}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => document.getElementById("comments-section").scrollIntoView({ behavior: "smooth" })}
-              >
-                <MessageSquare className="w-5 h-5 mr-2" />
-                {blog.num_comments || 0}
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Bookmark className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Share2 className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* content */}
-        <div className="markdown-body">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content?.replace(/^\s*#\s+.*?(\r\n|\n|$)/, "")}</ReactMarkdown>
+          <p className="text-slate-500 text-md">{new Date(blog.created_at).toLocaleDateString()}</p>
         </div>
-      </article>
+
+        {/* like, comment, bookmark, share buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button type="button" variant="ghost" size="sm" onClick={handleBlogLike} className="outline-none focus:outline-none">
+              <Heart fill={isLiked ? "red" : "none"} className={`w-5 h-5 mr-2 ${isLiked ? "text-red-500" : ""}`} />
+              {blog.num_likes || 0}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => document.getElementById("comments-section").scrollIntoView({ behavior: "smooth" })}
+            >
+              <MessageSquare className="w-5 h-5 mr-2" />
+              {blog.num_comments || 0}
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Bookmark className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Share2 className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* content */}
+      <div className="markdown-body">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content?.replace(/^\s*#\s+.*?(\r\n|\n|$)/, "")}</ReactMarkdown>
+      </div>
 
       {/* comments section */}
       <section className="pt-8 border-t border-slate-800" id="comments-section">

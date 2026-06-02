@@ -13,7 +13,6 @@ class BlogModel(BaseModel):
     content: str = ""
     status: str = "draft"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    num_likes: int = 0
 
     class Config:
         populate_by_name = True
@@ -27,11 +26,15 @@ class CommentModel(BaseModel):
     parent_id: Optional[PyObjectId] = None
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    num_likes: int = 0
-    num_replies: int = 0
 
 
 class LikeModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     blog_id: PyObjectId
     user_id: PyObjectId
+
+
+class FollowModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    follower_id: PyObjectId
+    following_id: PyObjectId

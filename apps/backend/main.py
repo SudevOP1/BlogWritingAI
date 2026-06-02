@@ -19,8 +19,17 @@ async def lifespan(app: FastAPI):
 
     # startup
 
-    await create_collections_if_not_exists()
     debug.create_log_file_if_not_exists()
+    await create_collections_if_not_exists(
+        [
+            "users",
+            "blogs",
+            "comments",
+            "blog_likes",
+            "comment_likes",
+            "follows",
+        ]
+    )
 
     yield
 

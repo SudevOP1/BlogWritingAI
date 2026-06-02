@@ -254,8 +254,12 @@ async def blog_websocket(websocket: WebSocket, blog_id: str):
             blog["created_at"] = (
                 blog.get("created_at").isoformat() if blog.get("created_at") else None
             )
-            blog["num_likes"] = blog.get("num_likes", 0)
-            blog["num_comments"] = blog.get("num_comments", 0)
+            blog["num_likes"] = await db.blog_likes.count_documents(
+                {"blog_id": ObjectId(blog_id)}
+            )
+            blog["num_comments"] = await db.comments.count_documents(
+                {"blog_id": ObjectId(blog_id)}
+            )
 
             await websocket.send_json({"type": "blog", "blog": blog})
 
