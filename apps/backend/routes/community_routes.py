@@ -297,18 +297,30 @@ async def check_following(user_id: str, limit: int = 10, offset: int = 0):
                 "status_code": 404,
             }
 
-        following_list = (
-            await db.follows.find({"follower_id": ObjectId(user_id)})
-            .skip(offset)
-            .limit(limit)
-            .to_list(length=limit)
-        )
-
-        for follow in following_list:
-            follow["id"] = str(follow["_id"])
-            del follow["_id"]
-            follow["follower_id"] = str(follow["follower_id"])
-            follow["following_id"] = str(follow["following_id"])
+        pipeline = [
+            {"$match": {"follower_id": ObjectId(user_id)}},
+            {"$skip": offset},
+            {"$limit": limit},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "following_id",
+                    "foreignField": "_id",
+                    "as": "user_info"
+                }
+            },
+            {"$unwind": "$user_info"},
+            {
+                "$project": {
+                    "id": {"$toString": "$_id"},
+                    "follower_id": {"$toString": "$follower_id"},
+                    "following_id": {"$toString": "$following_id"},
+                    "username": "$user_info.username",
+                    "display_name": "$user_info.display_name",
+                }
+            }
+        ]
+        following_list = await db.follows.aggregate(pipeline).to_list(length=limit)
 
         return {"success": True, "following": following_list}
 
@@ -336,18 +348,30 @@ async def check_followers(user_id: str, limit: int = 10, offset: int = 0):
                 "status_code": 404,
             }
 
-        followers_list = (
-            await db.follows.find({"following_id": ObjectId(user_id)})
-            .skip(offset)
-            .limit(limit)
-            .to_list(length=limit)
-        )
-
-        for follow in followers_list:
-            follow["id"] = str(follow["_id"])
-            del follow["_id"]
-            follow["follower_id"] = str(follow["follower_id"])
-            follow["following_id"] = str(follow["following_id"])
+        pipeline = [
+            {"$match": {"following_id": ObjectId(user_id)}},
+            {"$skip": offset},
+            {"$limit": limit},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "follower_id",
+                    "foreignField": "_id",
+                    "as": "user_info"
+                }
+            },
+            {"$unwind": "$user_info"},
+            {
+                "$project": {
+                    "id": {"$toString": "$_id"},
+                    "follower_id": {"$toString": "$follower_id"},
+                    "following_id": {"$toString": "$following_id"},
+                    "username": "$user_info.username",
+                    "display_name": "$user_info.display_name",
+                }
+            }
+        ]
+        followers_list = await db.follows.aggregate(pipeline).to_list(length=limit)
 
         return {"success": True, "followers": followers_list}
 

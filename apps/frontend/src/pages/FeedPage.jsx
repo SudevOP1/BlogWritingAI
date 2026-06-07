@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Sparkles, Star, PenTool, CheckCircle, Users, Compass, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
 import FeedBlogCard from "../components/FeedBlogCard.jsx";
@@ -11,36 +12,42 @@ const FeedPage = () => {
   const { backendUrl, accessToken } = useAuthContext();
   const { addToast } = useToastContext();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = ["new", "top", "following"].includes(tabParam) ? tabParam : "new";
+
   const [blogs, setBlogs] = useState([]);
-  const [topics, setTopics] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState("All");
-  const [activeTab, setActiveTab] = useState("new"); // new, top, following
   const [loading, setLoading] = useState(true);
-  const [topicsLoading, setTopicsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Sync / validate tab in URL
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (!["new", "top", "following"].includes(currentTab)) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("tab", "new");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleTabChange = (id) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", id);
+      return next;
+    });
+  };
 
   // Pagination
   const [skip, setSkip] = useState(0);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const LIMIT = 10;
-
-  // Fetch unique topics
-  const fetchTopics = async () => {
-    setTopicsLoading(true);
-    try {
-      const res = await fetch(`${backendUrl}/blogs/topics`);
-      if (!res.ok) throw new Error("Failed to fetch topics");
-      const data = await res.json();
-      if (data.success) {
-        setTopics(data.topics);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setTopicsLoading(false);
-    }
-  };
 
   // Fetch blogs feed
   const fetchBlogs = async (reset = false) => {
@@ -52,8 +59,7 @@ const FeedPage = () => {
 
     setError(null);
     try {
-      const topicParam = selectedTopic && selectedTopic !== "All" ? `&topic=${encodeURIComponent(selectedTopic)}` : "";
-      const url = `${backendUrl}/blogs/feed?sort=${activeTab}&skip=${currentSkip}&limit=${LIMIT}${topicParam}`;
+      const url = `${backendUrl}/blogs/feed?sort=${activeTab}&skip=${currentSkip}&limit=${LIMIT}`;
 
       const headers = {};
       if (accessToken) {
@@ -85,25 +91,17 @@ const FeedPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTopics();
-  }, [backendUrl]);
-
-  // Refetch when activeTab or selectedTopic changes
+  // Refetch when activeTab changes
   useEffect(() => {
     fetchBlogs(true);
-  }, [activeTab, selectedTopic, backendUrl]);
-
-  const handleTopicSelect = (topic) => {
-    setSelectedTopic(topic);
-  };
+  }, [activeTab, backendUrl]);
 
   const loadMore = () => {
     fetchBlogs(false);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-[calc(100vh-4rem)]">
+    <div className="container mx-auto px-4 py-8 min-h-[80vh]">
       {/* Page Header / Subreddit Heading Style */}
       <div className="mb-6 flex flex-col gap-1 border-b border-slate-800 pb-6">
         <div className="flex items-center gap-3">
@@ -111,14 +109,8 @@ const FeedPage = () => {
             <Compass className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-              {selectedTopic === "All" ? "Feed" : `t/${selectedTopic}`}
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400">
-              {selectedTopic === "All"
-                ? "Discover trending AI-generated blogs across all topics"
-                : `Showing blogs tag-topic matching "${selectedTopic}"`}
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Feed</h1>
+            <p className="text-xs md:text-sm text-slate-400">Discover trending AI-generated blogs</p>
           </div>
         </div>
       </div>
@@ -137,7 +129,7 @@ const FeedPage = () => {
               ].map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => setActiveTab(id)}
+                  onClick={() => handleTabChange(id)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition duration-200 cursor-pointer ${
                     activeTab === id
                       ? "bg-primary/20 text-primary border border-primary/30"
@@ -149,14 +141,6 @@ const FeedPage = () => {
                 </button>
               ))}
             </div>
-            {selectedTopic !== "All" && (
-              <button
-                onClick={() => setSelectedTopic("All")}
-                className="text-xs text-primary hover:text-primary-hover font-medium underline px-3 cursor-pointer"
-              >
-                Clear filter
-              </button>
-            )}
           </div>
 
           {/* Feed Content */}
@@ -173,25 +157,44 @@ const FeedPage = () => {
                 Retry
               </Button>
             </div>
+          ) : activeTab === "following" && !accessToken ? (
+            <div className="flex flex-col justify-center items-center py-16 px-6 bg-surface/20 border border-slate-800 rounded-xl text-center">
+              <Users className="w-12 h-12 text-primary/60 mb-4 animate-pulse" />
+              <h3 className="text-lg font-bold text-white mb-2">Keep up with your favorite authors</h3>
+              <p className="text-slate-400 text-sm max-w-sm mb-6">
+                Log in to see post feeds from authors you follow and get personalized updates.
+              </p>
+              <Link to="/login">
+                <Button size="sm">Sign In</Button>
+              </Link>
+            </div>
           ) : blogs.length === 0 ? (
             <div className="flex flex-col justify-center items-center py-16 px-6 bg-surface/20 border border-slate-800 rounded-xl text-center">
               <BookOpen className="w-12 h-12 text-slate-600 mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">No blogs here yet</h3>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {activeTab === "following" ? "Feed is empty" : "No blogs here yet"}
+              </h3>
               <p className="text-slate-400 text-sm max-w-sm mb-6">
-                {selectedTopic === "All"
-                  ? "There are no published blogs in this feed. Start the trend by creating your own!"
-                  : `Nobody has generated a blog about "${selectedTopic}" yet. Be the first to generate one!`}
+                {activeTab === "following"
+                  ? "You aren't following anyone yet, or the authors you follow haven't posted anything."
+                  : "There are no published blogs in this feed. Start the trend by creating your own!"}
               </p>
-              <Link to="/create-blog">
-                <Button size="sm">
-                  <PenTool className="w-4 h-4 mr-2" /> Create Blog
+              {activeTab === "following" ? (
+                <Button size="sm" onClick={() => handleTabChange("new")}>
+                  Discover Authors
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/create-blog">
+                  <Button size="sm">
+                    <PenTool className="w-4 h-4 mr-2" /> Create Blog
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
               {blogs.map((blog) => (
-                <FeedBlogCard key={blog.id} blog={blog} onTopicSelect={handleTopicSelect} />
+                <FeedBlogCard key={blog.id} blog={blog} />
               ))}
 
               {/* Load More Button */}

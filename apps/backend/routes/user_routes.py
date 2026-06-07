@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from bson import ObjectId
 import traceback
+from typing import Optional
 
 from utils.auth import get_current_user, get_current_user_optional
 from utils.db import db
@@ -109,18 +110,92 @@ async def get_bookmarks(current_user: dict = Depends(get_current_user)):
         blogs = await cursor.to_list(length=100)
 
         for b in blogs:
-            b["id"] = str(b["_id"])
+            b_id_obj = b["_id"]
+            b["id"] = str(b_id_obj)
             del b["_id"]
             b["author_id"] = str(b["author_id"]) if b.get("author_id") else None
             b["created_at"] = (
                 b.get("created_at").isoformat() if b.get("created_at") else None
             )
+            
+            is_liked = (
+                await db.blog_likes.find_one(
+                    {
+                        "user_id": user_id,
+                        "blog_id": b_id_obj,
+                    }
+                )
+                is not None
+            )
+            num_bookmarks = await db.users.count_documents({"bookmarks": b_id_obj})
+            
+            b["is_liked"] = is_liked
+            b["is_bookmarked"] = True
+            b["num_bookmarks"] = num_bookmarks
 
         return {"success": True, "blogs": blogs}
 
     except Exception as e:
         debug.error(
             f"500 GET /users/bookmarks",
+            traceback.format_exc(),
+            api_route=True,
+        )
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }
+
+
+@user_router.get("/liked")
+async def get_liked_blogs(current_user: dict = Depends(get_current_user)):
+    try:
+        user_id = ObjectId(current_user["id"])
+        
+        cursor = db.blog_likes.find({"user_id": user_id})
+        likes = await cursor.to_list(length=100)
+        
+        if not likes:
+            return {"success": True, "blogs": []}
+            
+        blog_ids = [like["blog_id"] for like in likes]
+        
+        blogs_cursor = db.blogs.find({"_id": {"$in": blog_ids}})
+        blogs_list = await blogs_cursor.to_list(length=100)
+        
+        user_doc = await db.users.find_one({"_id": user_id}, {"bookmarks": 1})
+        user_bookmarks = []
+        if user_doc:
+            user_bookmarks = [str(bid) for bid in user_doc.get("bookmarks", [])]
+        
+        blogs = []
+        for b in blogs_list:
+            b_id_obj = b["_id"]
+            blog_id_str = str(b_id_obj)
+            
+            num_bookmarks = await db.users.count_documents({"bookmarks": b_id_obj})
+            
+            new_blog = {
+                "id": blog_id_str,
+                "author_id": str(b.get("author_id", None)),
+                "created_at": b.get("created_at", None).isoformat() if b.get("created_at") else None,
+                "status": b.get("status"),
+                "title": b.get("title"),
+                "topic": b.get("topic"),
+                "num_comments": b.get("num_comments", 0),
+                "num_likes": b.get("num_likes", 0),
+                "is_liked": True,
+                "is_bookmarked": blog_id_str in user_bookmarks,
+                "num_bookmarks": num_bookmarks,
+            }
+            blogs.append(new_blog)
+            
+        return {"success": True, "blogs": blogs}
+        
+    except Exception as e:
+        debug.error(
+            f"500 GET /users/liked",
             traceback.format_exc(),
             api_route=True,
         )
@@ -160,7 +235,10 @@ async def search_users(q: str = ""):
 
 
 @user_router.get("/{user_id}")
-async def get_user_details(user_id: str):
+async def get_user_details(
+    user_id: str,
+    current_user: Optional[dict] = Depends(get_current_user_optional)
+):
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
         if not user:
@@ -180,6 +258,15 @@ async def get_user_details(user_id: str):
             {"author_id": ObjectId(user_id), "status": "completed"}
         )
 
+        is_following = False
+        if current_user:
+            is_following = await db.follows.find_one(
+                {
+                    "follower_id": ObjectId(current_user["id"]),
+                    "following_id": ObjectId(user_id),
+                }
+            ) is not None
+
         return {
             "success": True,
             "user": {
@@ -189,6 +276,7 @@ async def get_user_details(user_id: str):
                 "num_followers": num_followers,
                 "num_following": num_following,
                 "num_blogs": num_blogs,
+                "is_following": is_following,
             },
         }
     except Exception as e:
@@ -209,7 +297,7 @@ async def get_user_blogs(
     user_id: str,
     limit: int = 10,
     skip=0,
-    current_user: dict = Depends(get_current_user_optional),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -229,9 +317,19 @@ async def get_user_blogs(
 
         blogs_list = await blogs_list.to_list(length=limit)
 
+        user_bookmarks = []
+        if current_user:
+            user_doc = await db.users.find_one(
+                {"_id": ObjectId(current_user["id"])}, {"bookmarks": 1}
+            )
+            if user_doc:
+                user_bookmarks = [str(bid) for bid in user_doc.get("bookmarks", [])]
+
         blogs = []
 
         for blog in blogs_list:
+            b_id_obj = blog["_id"]
+            blog_id_str = str(b_id_obj)
 
             is_liked = (
                 await db.blog_likes.find_one(
@@ -239,15 +337,16 @@ async def get_user_blogs(
                         "user_id": (
                             ObjectId(current_user["id"]) if current_user else None
                         ),
-                        "blog_id": blog["_id"],
+                        "blog_id": b_id_obj,
                     }
                 )
                 is not None
             )
-            is_bookmarked = False
+            
+            num_bookmarks = await db.users.count_documents({"bookmarks": b_id_obj})
 
             new_blog = {
-                "id": str(blog["_id"]),
+                "id": blog_id_str,
                 "author_id": str(blog.get("author_id", None)),
                 "created_at": blog.get("created_at", None).isoformat(),
                 "status": blog.get("status"),
@@ -256,7 +355,8 @@ async def get_user_blogs(
                 "num_comments": blog.get("num_comments"),
                 "num_likes": blog.get("num_likes"),
                 "is_liked": is_liked,
-                "is_bookmarked": is_bookmarked,
+                "is_bookmarked": blog_id_str in user_bookmarks,
+                "num_bookmarks": num_bookmarks,
             }
 
             blogs.append(new_blog)

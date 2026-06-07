@@ -158,7 +158,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
                 onTopicSelect(blog.topic);
               }
             }}
-            className="text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded hover:bg-primary/20 transition tracking-wide"
+            className="text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded"
           >
             {blog.topic}
           </div>
@@ -191,7 +191,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
           </p>
         )}
 
-        <div className="flex items-center gap-2 md:gap-4 text-xs font-semibold text-slate-400 mt-2 pt-3 border-t border-slate-800/40">
+        <div className="flex items-center text-xs font-semibold text-slate-400 border-t border-slate-800/40">
           <Link
             to={`/blog/${blog.id}#comments-section`}
             onClick={(e) => e.stopPropagation()}
@@ -203,7 +203,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
 
           <button
             onClick={handleBookmark}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 transition cursor-pointer ${
               isBookmarked ? "text-primary hover:text-primary-hover" : "hover:text-white"
             }`}
           >
@@ -213,7 +213,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
 
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 hover:text-white transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 hover:text-white transition cursor-pointer"
           >
             <Share2 className="w-4 h-4 text-slate-500" />
             <span>Share</span>

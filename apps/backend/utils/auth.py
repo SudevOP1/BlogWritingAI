@@ -1,9 +1,9 @@
-from fastapi import Security, HTTPException
+from fastapi import Security, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.hash import pbkdf2_sha256
+from passlib.hash import pbkdf2_sha256  # pyrefly: ignore [missing-import]
 from jose import JWTError, jwt
 
 from utils.settings import get_settings
@@ -92,28 +92,35 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+    request: Request,
 ) -> Optional[dict]:
-    if not credentials:
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
         return None
 
-    token = credentials.credentials
-    if not token or token == "null" or token == "undefined":
-        return None
+    try:
+        if not auth_header.startswith("Bearer "):
+            return None
+        token = auth_header.split(" ")[1]
+        if not token or token == "null" or token == "undefined":
+            return None
 
-    payload_ok, payload = verify_token(token)
-    if not payload_ok:
-        return None
+        payload_ok, payload = verify_token(token)
+        if not payload_ok:
+            return None
 
-    username = payload.get("username")
-    if not username:
-        return None
+        username = payload.get("username")
+        if not username:
+            return None
 
-    user = await db.users.find_one({"username": username})
-    if not user:
-        return None
+        # verify user still exists
+        user = await db.users.find_one({"username": username})
+        if not user:
+            return None
 
-    return {"username": username, "id": user.get("_id")}
+        return {"username": username, "id": user.get("_id")}
+    except Exception:
+        return None
 
 
 async def create_user(username: str, display_name: str, password: str):
