@@ -94,7 +94,6 @@ async def get_comments(blog_id: str):
         comments = await cursor.to_list(length=100)
 
         for c in comments:
-
             username = await db.users.find_one({"_id": c["user_id"]}, {"username": 1})
             username = username.get("username") if username else None
 
@@ -136,7 +135,6 @@ async def get_replies(comment_id: str):
         comments = await cursor.to_list(length=100)
 
         for c in comments:
-
             c["id"] = str(c["_id"])
             del c["_id"]
 
@@ -306,19 +304,19 @@ async def check_following(user_id: str, limit: int = 10, offset: int = 0):
                     "from": "users",
                     "localField": "following_id",
                     "foreignField": "_id",
-                    "as": "user_info"
+                    "as": "user_info",
                 }
             },
             {"$unwind": "$user_info"},
             {
                 "$project": {
-                    "id": {"$toString": "$_id"},
+                    "_id": {"$toString": "$_id"},
                     "follower_id": {"$toString": "$follower_id"},
                     "following_id": {"$toString": "$following_id"},
                     "username": "$user_info.username",
                     "display_name": "$user_info.display_name",
                 }
-            }
+            },
         ]
         following_list = await db.follows.aggregate(pipeline).to_list(length=limit)
 
@@ -357,19 +355,19 @@ async def check_followers(user_id: str, limit: int = 10, offset: int = 0):
                     "from": "users",
                     "localField": "follower_id",
                     "foreignField": "_id",
-                    "as": "user_info"
+                    "as": "user_info",
                 }
             },
             {"$unwind": "$user_info"},
             {
                 "$project": {
-                    "id": {"$toString": "$_id"},
+                    "_id": {"$toString": "$_id"},
                     "follower_id": {"$toString": "$follower_id"},
                     "following_id": {"$toString": "$following_id"},
                     "username": "$user_info.username",
                     "display_name": "$user_info.display_name",
                 }
-            }
+            },
         ]
         followers_list = await db.follows.aggregate(pipeline).to_list(length=limit)
 
