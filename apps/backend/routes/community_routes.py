@@ -4,7 +4,7 @@ from bson import ObjectId
 from datetime import datetime
 import traceback
 
-from utils.auth import get_current_user
+from utils.auth import get_current_user, get_current_user_optional
 from utils.db import db
 from utils.models import CommentRequest
 from utils import debug
@@ -84,7 +84,10 @@ async def check_blog_liked(
 
 
 @community_router.get("/blogs/{blog_id}/comments")
-async def get_comments(blog_id: str):
+async def get_comments(
+    blog_id: str,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
     try:
         comment_docs_format = {
             "blog_id": ObjectId(blog_id),
@@ -100,6 +103,13 @@ async def get_comments(blog_id: str):
             num_likes = await db.comment_likes.count_documents({"comment_id": c["_id"]})
             num_replies = await db.comments.count_documents({"parent_id": c["_id"]})
 
+            liked = False
+            if current_user:
+                existing_like = await db.comment_likes.find_one(
+                    {"comment_id": c["_id"], "user_id": ObjectId(current_user["id"])}
+                )
+                liked = existing_like is not None
+
             c["id"] = str(c["_id"])
             del c["_id"]
 
@@ -111,6 +121,7 @@ async def get_comments(blog_id: str):
             c["content"] = c.get("content", "")
             c["num_likes"] = num_likes
             c["num_replies"] = num_replies
+            c["liked"] = liked
 
         return {"success": True, "comments": comments}
 
@@ -128,20 +139,41 @@ async def get_comments(blog_id: str):
 
 
 @community_router.get("/comments/{comment_id}/replies")
-async def get_replies(comment_id: str):
+async def get_replies(
+    comment_id: str,
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+):
     try:
         reply_docs_format = {"parent_id": ObjectId(comment_id)}
         cursor = db.comments.find(reply_docs_format).sort("created_at", 1)
         comments = await cursor.to_list(length=100)
 
         for c in comments:
+            username = await db.users.find_one({"_id": c["user_id"]}, {"username": 1})
+            username = username.get("username") if username else None
+
+            num_likes = await db.comment_likes.count_documents({"comment_id": c["_id"]})
+            num_replies = await db.comments.count_documents({"parent_id": c["_id"]})
+
+            liked = False
+            if current_user:
+                existing_like = await db.comment_likes.find_one(
+                    {"comment_id": c["_id"], "user_id": ObjectId(current_user["id"])}
+                )
+                liked = existing_like is not None
+
             c["id"] = str(c["_id"])
             del c["_id"]
 
             c["blog_id"] = str(c["blog_id"])
             c["user_id"] = str(c["user_id"])
+            c["username"] = username
             c["parent_id"] = str(c.get("parent_id", None))
             c["created_at"] = c.get("created_at", None)
+            c["content"] = c.get("content", "")
+            c["num_likes"] = num_likes
+            c["num_replies"] = num_replies
+            c["liked"] = liked
 
         return {"success": True, "comments": comments}
 

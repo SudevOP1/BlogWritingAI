@@ -22,12 +22,12 @@ const App = () => {
           <Routes>
             <Route    path="/"                    element={<Layout />}>
               <Route  index                       element={<LandingPage />} />
+              <Route  path="/feed"                element={<FeedPage />} />
               <Route  path="/login"               element={<LoginPage />} />
               <Route  path="/signup"              element={<SignupPage />} />
               <Route  path="/blog/:blogId"        element={<BlogDetailPage />} />
               <Route  path="/user/:userId"        element={<ProfilePage />} />
               <Route  path="/create-blog"         element={<ProtectedRoute><BlogCreationPage /></ProtectedRoute>} />
-              <Route  path="/feed"                element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
               <Route  path="*"                    element={<BrokenURL />} />
             </Route>
           </Routes>

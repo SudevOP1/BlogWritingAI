@@ -1,6 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Sparkles, Star, PenTool, CheckCircle, Users, Compass, BookOpen } from "lucide-react";
+import {
+  Sparkles,
+  Star,
+  PenTool,
+  CheckCircle,
+  Users,
+  Compass,
+  BookOpen,
+  ListPlus,
+  ArrowRight,
+  UserPlus,
+  LogIn,
+} from "lucide-react";
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
@@ -101,7 +113,7 @@ const FeedPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-[80vh]">
+    <div className="max-w-6xl mx-auto px-8 py-8 min-h-[80vh]">
       {/* Page Header / Subreddit Heading Style */}
       <div className="mb-6 flex flex-col gap-1 border-b border-slate-800 pb-6">
         <div className="flex items-center gap-3">
@@ -116,12 +128,12 @@ const FeedPage = () => {
       </div>
 
       {/* Main Grid: Feed + Sidebar */}
-      <div className="flex flex-col md:flex-row gap-8 items-start">
+      <div className="flex flex-col md:flex-row gap-4 items-start">
         {/* Left Side: Sorting and Feed Cards */}
         <div className="flex flex-1 flex-col gap-4">
           {/* Sorting Bar */}
           <div className="flex items-center justify-between bg-surface/30 border border-slate-800/80 p-2 rounded-xl backdrop-blur-sm">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-row justify-center items-center gap-2 w-full">
               {[
                 { id: "new", label: "New", icon: Sparkles },
                 { id: "top", label: "Top", icon: Star },
@@ -130,7 +142,8 @@ const FeedPage = () => {
                 <button
                   key={id}
                   onClick={() => handleTabChange(id)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition duration-200 cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition duration-200
+                    cursor-pointer flex-1 ${
                     activeTab === id
                       ? "bg-primary/20 text-primary border border-primary/30"
                       : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent"
@@ -211,12 +224,24 @@ const FeedPage = () => {
         </div>
 
         {/* Right Side: Sidebar */}
-        <div className="flex flex-col gap-6 w-full md:w-sm">
+        <div className="flex flex-col gap-4 w-full md:w-2xs lg:w-xs xl:w-sm">
+          {/* About Widget */}
+          <div className="bg-surface/30 border border-slate-800/80 rounded-xl p-6 backdrop-blur-sm text-xs leading-relaxed text-slate-500">
+            <h3 className="font-bold text-white flex items-center gap-2 mb-3">
+              <CheckCircle className="w-4 h-4 text-primary" />
+              <span className="text-base">Welcome to BlogAI Feed</span>
+            </h3>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              This is the community dashboard. Here you can see, like, and discuss AI-crafted blogs from creators around the
+              globe.
+            </p>
+          </div>
+
           {/* Create Blog Widget */}
           <div className="bg-surface/30 border border-slate-800/80 rounded-xl p-6 backdrop-blur-sm shadow-lg">
             <h3 className="font-bold text-white flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span>Generate New Post</span>
+              <ListPlus className="w-4 h-4 text-primary" />
+              <span>Generate A Blog</span>
             </h3>
             <p className="text-slate-400 text-xs leading-relaxed mb-5">
               Enter any topic and watch BlogAI research, structure, and draft a high-quality blog using state-of-the-art agent
@@ -230,17 +255,33 @@ const FeedPage = () => {
             </Link>
           </div>
 
-          {/* About Widget */}
-          <div className="bg-surface/30 border border-slate-800/80 rounded-xl p-6 backdrop-blur-sm text-xs leading-relaxed text-slate-500">
-            <h3 className="font-bold text-white flex items-center gap-2 mb-3">
-              <CheckCircle className="w-4 h-4 text-primary" />
-              <span className="text-base">Welcome to BlogAI Feed</span>
-            </h3>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              This is the community dashboard. Here you can see, like, and discuss AI-crafted blogs from creators around the
-              globe.
-            </p>
-          </div>
+          {/* Login Signup Buttons */}
+          {!accessToken && (
+            <div className="bg-surface/30 border border-slate-800/80 rounded-xl p-6 backdrop-blur-sm shadow-lg">
+              <h3 className="font-bold text-white flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>Login to elevate your experience</span>
+              </h3>
+              <p className="text-slate-400 text-xs leading-relaxed mb-5">
+                Login to access all features of BlogAI, including creating blogs, following other authors, and receiving
+                personalized recommendations.
+              </p>
+              <div className="flex flex-row gap-2 items-center justify-between">
+                <Link to="/signup" className="flex-1">
+                  <Button variant="primary" className="w-full group flex flex-row items-center gap-2">
+                    Signup
+                    <UserPlus className="w-4 h-4 group-hover:translate-x-0.5 transition" />
+                  </Button>
+                </Link>
+                <Link to="/login" className="flex-1">
+                  <Button variant="secondary" className="w-full group flex flex-row items-center gap-2">
+                    Login
+                    <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

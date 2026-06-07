@@ -411,7 +411,7 @@ const BlogDetailPage = () => {
 
   // normal return for generated blog
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col">
+    <div className="max-w-4xl mx-auto px-8 py-8 flex flex-col">
       {/* Back to Feed button */}
       <Link to="/feed" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white transition">
         <ArrowLeft className="w-4 h-4" />

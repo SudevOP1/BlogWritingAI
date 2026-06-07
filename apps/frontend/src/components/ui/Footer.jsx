@@ -12,7 +12,7 @@ const footerLinks = [
 const Footer = () => {
   return (
     <footer className="border-t border-slate-800 bg-background/80 backdrop-blur-md py-6 md:py-0">
-      <div className="container mx-auto px-4 min-h-[4rem] flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
+      <div className="mx-auto px-8 min-h-[4rem] flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
         <p className="text-sm md:text-md text-muted-foreground text-center md:text-left">
           &copy; {new Date().getFullYear()} BlogAI. All rights reserved.
         </p>

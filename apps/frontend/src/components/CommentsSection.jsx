@@ -137,7 +137,7 @@ const CommentsSection = ({ blogId }) => {
 
       <div className="flex flex-col gap-6 mt-4">
         {comments.map((comment) => (
-          <Comment key={comment.id} comment={comment} />
+          <Comment key={comment.id} comment={comment} blogId={blogId} />
         ))}
       </div>
     </div>
