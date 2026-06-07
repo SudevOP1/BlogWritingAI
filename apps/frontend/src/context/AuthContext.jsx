@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
   const [displayName, setDisplayName] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state from localStorage
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+    const storedUserId = localStorage.getItem("userId");
     const storedUsername = localStorage.getItem("username");
     const storedDisplayName = localStorage.getItem("displayName");
 
@@ -39,9 +41,11 @@ export const AuthProvider = ({ children }) => {
           // Token expired, clear it
           localStorage.removeItem("accessToken");
           localStorage.removeItem("username");
+          localStorage.removeItem("userId");
           localStorage.removeItem("displayName");
           setAccessToken(null);
           setUser(null);
+          setUserId(null);
           setUsername(null);
           setDisplayName(null);
         } else {
@@ -50,6 +54,9 @@ export const AuthProvider = ({ children }) => {
           if (storedUsername) {
             setUsername(storedUsername);
           }
+          if (storedUserId) {
+            setUserId(storedUserId);
+          }
           if (storedDisplayName) {
             setDisplayName(storedDisplayName);
           }
@@ -57,6 +64,7 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error("Error decoding token:", error);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("userId");
         localStorage.removeItem("username");
         localStorage.removeItem("displayName");
       }
@@ -96,7 +104,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginUser = async (username = "", password = "", navigateTo = "/") => {
+  const loginUser = async (username = "", password = "", navigateTo = "/feed") => {
     setLoading(true);
 
     try {
@@ -119,10 +127,12 @@ export const AuthProvider = ({ children }) => {
 
         setAccessToken(token);
         setUser(decoded);
+        setUserId(data.id);
         setUsername(username);
         setDisplayName(data.display_name);
 
         localStorage.setItem("accessToken", token);
+        localStorage.setItem("userId", data.id);
         localStorage.setItem("username", username);
         localStorage.setItem("displayName", data.display_name);
 
@@ -142,10 +152,12 @@ export const AuthProvider = ({ children }) => {
   const logoutUser = () => {
     setAccessToken(null);
     setUser(null);
+    setUserId(null);
     setUsername(null);
     setDisplayName(null);
 
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("userId");
     localStorage.removeItem("username");
     localStorage.removeItem("displayName");
 
@@ -155,6 +167,7 @@ export const AuthProvider = ({ children }) => {
 
   const contextData = {
     user: user,
+    userId: userId,
     username: username,
     displayName: displayName,
     backendUrl: backendUrl,

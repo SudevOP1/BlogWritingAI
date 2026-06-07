@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -23,6 +23,7 @@ const BlogDetailPage = () => {
   const { backendUrl, accessToken, username } = useAuthContext();
   const { addToast } = useToastContext();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [blog, setBlog] = useState(null);
   const [isEditing, setIsEditing] = useState(true);
@@ -33,7 +34,6 @@ const BlogDetailPage = () => {
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
-  const [isLikesLoading, setIsLikesLoading] = useState(true);
 
   const handleBlogLike = async () => {
     if (!accessToken) {
@@ -79,11 +79,9 @@ const BlogDetailPage = () => {
 
     if (!accessToken) {
       setIsLiked(false);
-      setIsLikesLoading(false);
       return;
     }
 
-    setIsLikesLoading(true);
     try {
       const res = await fetch(`${backendUrl}/community/blogs/${blog.id}/is_liked`, {
         method: "GET",
@@ -104,7 +102,6 @@ const BlogDetailPage = () => {
       console.error("Error checking like status:", error);
       addToast("Failed to check like status", "red", 3);
     } finally {
-      setIsLikesLoading(false);
     }
   };
 
@@ -234,6 +231,19 @@ const BlogDetailPage = () => {
       fetchIsLiked();
     }
   }, [blog?.id, blog?.status, accessToken]);
+
+  // scroll to comments section
+  useEffect(() => {
+    if (location.hash) {
+      const elem = document.querySelector(location.hash);
+      if (elem) {
+        elem.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
+  }, [location]);
 
   if (isEditing) {
     return (
@@ -403,7 +413,7 @@ const BlogDetailPage = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col">
       {/* Back to Feed button */}
-      <Link to="/" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white transition">
+      <Link to="/feed" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white transition">
         <ArrowLeft className="w-4 h-4" />
         Back to Feed
       </Link>

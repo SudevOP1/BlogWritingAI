@@ -15,13 +15,13 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (accessToken) {
-      navigate(location.state?.from || "/dashboard");
+      navigate(location.state?.from || "/feed");
     }
   }, [accessToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await loginUser(username, password, location.state?.from || "/dashboard");
+    await loginUser(username, password, location.state?.from || "/feed");
   };
 
   return (

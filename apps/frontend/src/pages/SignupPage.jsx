@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { Eye, EyeOff, PenSquare } from "lucide-react";
@@ -13,10 +13,11 @@ const SignupPage = () => {
 
   const { accessToken, signupUser, loading } = useAuthContext();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (accessToken) {
-      navigate("/dashboard");
+      navigate(location.state?.from || "/feed");
     }
   }, [accessToken]);
 

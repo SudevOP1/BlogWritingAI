@@ -116,11 +116,16 @@ async def get_current_user_optional(
     return {"username": username, "id": user.get("_id")}
 
 
-async def create_user(username: str, password: str):
+async def create_user(username: str, display_name: str, password: str):
     hashed = hash_password(password)
 
     result = await db.users.insert_one(
-        {"username": username, "password": hashed, "created_at": datetime.utcnow()}
+        {
+            "username": username,
+            "display_name": display_name,
+            "password": hashed,
+            "created_at": datetime.utcnow(),
+        }
     )
 
     user = await db.users.find_one({"_id": result.inserted_id})

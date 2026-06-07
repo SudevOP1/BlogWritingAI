@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { PenSquare, User, LogOut, PenTool } from "lucide-react";
+import { PenSquare, User, LogOut, PenTool, House } from "lucide-react";
 import Button from "./Button.jsx";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 
 const Navbar = () => {
-  const { user, logoutUser } = useAuthContext();
+  const { userId, logoutUser } = useAuthContext();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-slate-800 bg-background/40 backdrop-blur-md">
@@ -16,22 +16,31 @@ const Navbar = () => {
           <span className="text-xl font-semibold tracking-tight text-white">BlogAI</span>
         </Link>
 
-        <div className="flex items-center space-x-4">
+        {/* navbar buttons */}
+        <div className="flex items-center gap-2">
           <Link to="/create-blog">
             <Button variant="ghost" size="sm">
-              <PenTool className="w-4 h-4 mr-2" />
+              <PenTool className={"w-4 h-4 mr-2"} />
               Create Blog
             </Button>
           </Link>
 
-          {user ? (
-            <div className="flex items-center space-x-4">
-              <Link to="/dashboard">
+          {userId ? (
+            <>
+              <Link to="/feed">
                 <Button variant="ghost" size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Dashboard
+                  <House className={"w-4 h-4 mr-2"} />
+                  Feed
                 </Button>
               </Link>
+
+              <Link to={`/user/${userId}`}>
+                <Button variant="ghost" size="sm">
+                  <User className={"w-4 h-4 mr-2"} />
+                  Profile
+                </Button>
+              </Link>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -40,20 +49,13 @@ const Navbar = () => {
               >
                 Logout <LogOut className="w-4 h-4" />
               </Button>
-            </div>
+            </>
           ) : (
-            <div className="flex items-center space-x-3">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="primary" size="sm">
-                  Sign up
-                </Button>
-              </Link>
-            </div>
+            <Link to="/login">
+              <Button variant="ghost" size="sm">
+                Log in
+              </Button>
+            </Link>
           )}
         </div>
       </div>

@@ -35,9 +35,15 @@ async def toggle_blog_like(
 
         if existing_blog_like:
             await db.blog_likes.delete_one({"_id": existing_blog_like["_id"]})
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)}, {"$inc": {"num_likes": -1}}
+            )
             return {"success": True, "liked": False}
         else:
             await db.blog_likes.insert_one(blog_like_doc)
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)}, {"$inc": {"num_likes": 1}}
+            )
             return {"success": True, "liked": True}
 
     except Exception as e:
@@ -179,6 +185,9 @@ async def add_comment(
             "created_at": datetime.utcnow(),
         }
         result = await db.comments.insert_one(comment_doc)
+        await db.blogs.update_one(
+            {"_id": ObjectId(blog_id)}, {"$inc": {"num_comments": 1}}
+        )
 
         return {
             "success": True,

@@ -68,6 +68,7 @@ async def login(body: LoginRequest):
             "success": True,
             "access_token": access_token,
             "token_type": "bearer",
+            "id": str(user.get("_id")),
             "username": user.get("username"),
             "display_name": user.get("display_name"),
         }

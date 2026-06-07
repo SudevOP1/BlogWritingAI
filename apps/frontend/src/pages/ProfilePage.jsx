@@ -1,18 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  Heart,
-  MessageSquare,
-  Bookmark,
-  Calendar,
-  FileText,
-  Users,
-  TrendingUp,
-  ExternalLink,
-  Globe,
-  MapPin,
-} from "lucide-react";
+import { ArrowLeft, Heart, Bookmark, FileText } from "lucide-react";
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
