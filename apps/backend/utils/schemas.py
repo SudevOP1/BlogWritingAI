@@ -8,6 +8,7 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class BlogModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     author_id: Optional[PyObjectId] = None
+    ip_address: Optional[str] = None
     topic: str
     title: str = ""
     content: str = ""

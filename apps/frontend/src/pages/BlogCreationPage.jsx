@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
@@ -12,39 +12,81 @@ const BlogCreationPage = () => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [rateLimitRemainingSeconds, setRateLimitRemainingSeconds] = useState(null);
+
+  const getReadableTime = (seconds) => {
+    const totalSeconds = Math.max(0, Math.floor(seconds));
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes}m ${secs}s`;
+  };
 
   const handleGenerate = async (e) => {
     e.preventDefault();
-    if (!topic) return;
+    if (!topic) {
+      return;
+    }
 
     setIsLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch(`${backendUrl}/blogs/generate?topic=${encodeURIComponent(topic)}`, {
+      const res = await fetch(`${backendUrl}/blogs/generate?topic=${encodeURIComponent(topic)}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to initialize blog generation");
+      if (!res.ok) {
+        throw new Error("Failed to generate blog");
       }
+      const data = await res.json();
 
-      const { blog_id } = data;
-      // Redirect to the detail page where progress is handled
-      navigate(`/blog/${blog_id}`);
+      // redirect to BlogDetailPage where progress is handled
+      if (data.success) {
+        navigate(`/blog/${data.blog_id}`);
+      } else {
+        if (data.status_code === 429) {
+          setRateLimitRemainingSeconds(data.remaining_seconds);
+          console.error("Rate limit exceeded, refreshes in", data.remaining_seconds);
+          addToast("Rate limit exceeded", "red", 3);
+          return;
+        } else {
+          console.error("Failed to generate blog:", data.error);
+          throw new Error("Failed to generate blog");
+        }
+      }
     } catch (error) {
-      console.error(error);
-      setError(error.message || "An unexpected error occurred");
-      addToast(error.message || "An unexpected error occurred", "error", 5);
+      console.error("Error generating blog:", error);
+      addToast("Failed to generate blog", "red", 3);
+    } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (rateLimitRemainingSeconds === null) return;
+
+    const interval = setInterval(() => {
+      setRateLimitRemainingSeconds((prev) => {
+        if (prev === null) {
+          return null;
+        }
+        if (prev <= 1) {
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [rateLimitRemainingSeconds]);
 
   return (
     <div className="mx-10 min-h-[80vh] flex items-center justify-center">
@@ -77,7 +119,7 @@ const BlogCreationPage = () => {
           <Button
             type="submit"
             className="w-full py-7 text-lg font-bold rounded-2xl hover:scale-[1.01] active:scale-[0.99] transition group"
-            disabled={!topic || isLoading}
+            disabled={!topic || isLoading || rateLimitRemainingSeconds !== null}
             isLoading={isLoading}
           >
             {isLoading ? "Summoning AI Agent..." : "Start Generation"}
@@ -85,13 +127,13 @@ const BlogCreationPage = () => {
           </Button>
         </form>
 
-        {error && (
+        {rateLimitRemainingSeconds !== null && (
           <div className="bg-red-500/10 border border-red-500/50 rounded-2xl p-5 text-red-400 text-sm animate-in fade-in slide-in-from-top-2 relative z-10">
             <div className="flex items-center space-x-2 mb-1">
               <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              <span className="font-bold text-red-300 uppercase tracking-wider">Initialization Error</span>
+              <span className="font-bold text-red-300 uppercase tracking-wider">Rate Limit Exceeded</span>
             </div>
-            <p className="text-slate-300">{error}</p>
+            <p className="text-slate-300">Try again in {getReadableTime(rateLimitRemainingSeconds)}</p>
           </div>
         )}
       </div>

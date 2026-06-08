@@ -223,7 +223,7 @@ const ProfilePage = () => {
 
   if (userDetailsLoading || blogsLoading) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+      <div className="flex justify-center items-center h-[80vh]">
         <Loader className="w-8 h-8 text-primary" />
       </div>
     );

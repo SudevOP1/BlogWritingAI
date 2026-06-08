@@ -247,7 +247,7 @@ const BlogDetailPage = () => {
 
   if (isEditing) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+      <div className="flex justify-center items-center h-[80vh]">
         <Loader className="w-8 h-8 text-primary" />
       </div>
     );
@@ -255,7 +255,7 @@ const BlogDetailPage = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-[calc(100vh-4rem)] text-center px-4">
+      <div className="flex flex-col justify-center items-center h-[80vh] text-center px-4">
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-2">Error Loading Blog</h2>
           <p className="text-slate-400">{error}</p>
@@ -273,7 +273,7 @@ const BlogDetailPage = () => {
 
   if (blog.status === "failed" && !showCompletionUI) {
     return (
-      <div className="flex flex-col justify-center items-center h-[calc(100vh-4rem)] text-center px-4">
+      <div className="flex flex-col justify-center items-center h-[80vh] text-center px-4">
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-2">Blog Generation Failed</h2>
           <p className="text-slate-400">{blog.error_message}</p>
@@ -291,7 +291,7 @@ const BlogDetailPage = () => {
     const isFailed = blog.status === "failed" && showCompletionUI;
 
     return (
-      <div className="container mx-auto px-4 py-8 min-h-[calc(100vh-4rem)]">
+      <div className="container mx-auto px-4 py-8 min-h-[80vh]">
         <Link to="/" className="flex flex-row gap-2 w-fit items-center text-slate-400 hover:text-white mb-6 transition">
           <ArrowLeft className="w-4 h-4" />
           Back to Feed

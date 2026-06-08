@@ -27,7 +27,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 py-8">
       <div className="w-full max-w-md bg-surface border border-slate-800 rounded-xl p-8 shadow-2xl">
         <div className="flex flex-col items-center mb-8">
           <div className="bg-primary p-2 rounded-xl mb-4">
