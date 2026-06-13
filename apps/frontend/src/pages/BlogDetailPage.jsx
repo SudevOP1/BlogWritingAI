@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, User } from "lucide-react";
+import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, User, Clock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -18,6 +18,16 @@ const steps = [
   { id: "reducer", label: "Finalizing Content" },
 ];
 
+const getReadableTime = (seconds) => {
+  const totalSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+};
+
 const BlogDetailPage = () => {
   const { blogId } = useParams();
   const { backendUrl, accessToken, username } = useAuthContext();
@@ -30,10 +40,32 @@ const BlogDetailPage = () => {
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState("idle");
   const [showCompletionUI, setShowCompletionUI] = useState(false);
+  const [retryCountdown, setRetryCountdown] = useState(null);
 
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
+
+  // Countdown timer for rate limit
+  useEffect(() => {
+    if (retryCountdown === null || retryCountdown <= 0) return;
+
+    const interval = setInterval(() => {
+      setRetryCountdown((prev) => {
+        if (prev === null || prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [retryCountdown]);
+
+  // Initialize countdown when blog loads with rate_limited error
+  useEffect(() => {
+    if (blog?.error_type === "rate_limited" && blog?.retry_after_seconds && retryCountdown === null) {
+      setRetryCountdown(blog.retry_after_seconds);
+    }
+  }, [blog?.error_type, blog?.retry_after_seconds]);
 
   const handleBlogLike = async () => {
     if (!accessToken) {
@@ -259,8 +291,8 @@ const BlogDetailPage = () => {
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-2">Error Loading Blog</h2>
           <p className="text-slate-400">{error}</p>
-          <Link to="/" className="mt-6 inline-block text-primary hover:underline">
-            Back to Home
+          <Link to="/feed" className="mt-6 inline-block text-primary hover:underline">
+            Back to Feed
           </Link>
         </div>
       </div>
@@ -272,13 +304,54 @@ const BlogDetailPage = () => {
   }
 
   if (blog.status === "failed" && !showCompletionUI) {
+    // Rate-limited error — show friendly "high traffic" message with countdown
+    if (blog.error_type === "rate_limited") {
+      return (
+        <div className="flex flex-col justify-center items-center h-[80vh] text-center px-4">
+          <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-8 max-w-md space-y-4">
+            <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center mx-auto ring-1 ring-amber-500/20">
+              <Clock className="w-7 h-7 text-amber-400" />
+            </div>
+            <h2 className="text-xl font-bold text-amber-300">High Traffic</h2>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              We're experiencing high traffic right now.
+              {retryCountdown !== null && retryCountdown > 0 ? (
+                <>
+                  {" "}
+                  Please try again in <span className="font-semibold text-amber-400">{getReadableTime(retryCountdown)}</span>.
+                </>
+              ) : (
+                " You can try again now!"
+              )}
+            </p>
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <Link
+                to="/create-blog"
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition ${
+                  retryCountdown !== null && retryCountdown > 0
+                    ? "bg-slate-800 text-slate-500 cursor-not-allowed pointer-events-none"
+                    : "bg-primary text-white hover:bg-primary/90"
+                }`}
+              >
+                Try Again
+              </Link>
+              <Link to="/" className="text-slate-400 hover:text-white text-sm transition">
+                Back to Feed
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Generic failure
     return (
       <div className="flex flex-col justify-center items-center h-[80vh] text-center px-4">
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-2">Blog Generation Failed</h2>
           <p className="text-slate-400">{blog.error_message}</p>
-          <Link to="/" className="mt-6 inline-block text-primary hover:underline">
-            Back to Home
+          <Link to="/feed" className="mt-6 inline-block text-primary hover:underline">
+            Back to Feed
           </Link>
         </div>
       </div>

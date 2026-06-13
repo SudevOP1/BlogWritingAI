@@ -92,6 +92,31 @@ async def run_generation(blog_id: str, topic: str):
                 },
             )
 
+        # AI rate limit exhausted (Groq API)
+        elif "RATE_LIMITED:" in error_str:
+            # extract retry_after seconds from "RATE_LIMITED:60" format
+            try:
+                retry_after = int(error_str.split("RATE_LIMITED:")[-1])
+            except (ValueError, IndexError):
+                retry_after = 60
+
+            debug.error(
+                f"Rate limited for blog_id={blog_id}",
+                f"Retry after {retry_after}s",
+                api_route=True,
+            )
+            await db.blogs.update_one(
+                {"_id": ObjectId(blog_id)},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "error_type": "rate_limited",
+                        "error_message": f"We're experiencing high traffic right now. Please try again in {retry_after} seconds.",
+                        "retry_after_seconds": retry_after,
+                    }
+                },
+            )
+
         # generation errors
         else:
             debug.error(

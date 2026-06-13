@@ -1,8 +1,21 @@
 from openai import OpenAI
+import re
 import time
 
 from utils import debug
 from . import client
+
+
+def _parse_retry_after(error_str: str) -> int | None:
+    """
+    Try to extract a retry-after time (in seconds) from a Groq rate limit error message.
+    Groq errors typically say "Please try again in Xs" or "try again in X.XXs".
+    Returns seconds as an int, or None if not found.
+    """
+    match = re.search(r"try again in (\d+(?:\.\d+)?)\s*s", error_str, re.IGNORECASE)
+    if match:
+        return int(float(match.group(1))) + 1  # round up for safety
+    return None
 
 
 def invoke_ai(prompt: str, model: str = client.GROQ_AI_MODEL) -> tuple[bool, str]:
@@ -51,7 +64,15 @@ def invoke_ai_with_retries(
     """
     invoke the groq api with retry logic for rate limits
     returns success_bool and response_str or error_str
+
+    On exhausted rate-limit retries, returns: (False, "RATE_LIMITED:<seconds>")
+    so the caller can surface a user-friendly retry-after message.
     """
+
+    last_error = ""
+
+    # # ai rate limit testing
+    # return False, f"RATE_LIMITED:1000"
 
     try:
         for attempt in range(max_retries):
@@ -63,7 +84,11 @@ def invoke_ai_with_retries(
             if response_ok:
                 return True, response
 
-            if "Too many requests" in response:
+            if (
+                "Too many requests" in response
+                or "rate_limit_exceeded" in response.lower()
+            ):
+                last_error = response
                 if attempt < max_retries - 1:
                     delay = base_delay * (2**attempt)
                     debug.error(
@@ -72,8 +97,11 @@ def invoke_ai_with_retries(
                     )
                     time.sleep(delay)
                 else:
-                    return False, response
+                    # All retries exhausted — build a structured rate-limit error
+                    retry_after = _parse_retry_after(response) or 60
+                    return False, f"RATE_LIMITED:{retry_after}"
             elif "Invalid response" in response:
+                last_error = response
                 if attempt < max_retries - 1:
                     delay = base_delay * (2**attempt)
                     debug.error(
