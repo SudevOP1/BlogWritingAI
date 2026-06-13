@@ -29,6 +29,7 @@ Your output JSON must follow this exact schema:
 
 If the topic is invalid, empty, nonsensical, or insufficiently specified, return EXACTLY:
 {"needs_research":false,"mode":"closed_book","queries":[],"error":"INVALID_TOPIC"}
+If the topic appears to be a product, model, company, technology, codename, or named entity that you do not recognize, assume it is real and set needs_research=true.
 
 Topic: <user_input>{topic}</user_input>"""
 
