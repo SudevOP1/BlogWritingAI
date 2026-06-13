@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import sys
 
 from utils import debug
 from utils.db import create_collections_if_not_exists
@@ -18,6 +19,8 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
 
     # startup
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
     debug.create_log_file_if_not_exists()
     await create_collections_if_not_exists(
