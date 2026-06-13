@@ -10,8 +10,11 @@ ENV_FILEPATH = os.path.join(BASE_DIR, ".env")
 
 
 class Settings(BaseSettings):
-    MODEL: str
+    GROQ_BLOGAI_API_KEY: str
+    GROQ_AI_MODEL: str
+    OLLAMA_AI_MODEL: str
     TAVILY_API_KEY: str
+
     MONGO_DB_URI: str
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"

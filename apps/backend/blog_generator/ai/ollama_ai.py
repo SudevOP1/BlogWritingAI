@@ -1,5 +1,4 @@
-from ollama import chat
-
+from ollama import chat  # pyrefly: ignore [missing-import]
 import time
 
 from utils import debug
@@ -8,7 +7,7 @@ from . import client
 
 def invoke_ai(
     prompt: str,
-    model: str = client.MODEL,
+    model: str = client.OLLAMA_AI_MODEL,
 ) -> tuple[bool, str]:
     """
     invoke the Ollama api
@@ -41,7 +40,7 @@ def invoke_ai(
 
 def invoke_ai_with_retries(
     prompt: str,
-    model: str = client.MODEL,
+    model: str = client.OLLAMA_AI_MODEL,
     max_retries: int = 6,
     base_delay: int = 6,
 ) -> tuple[bool, str]:
