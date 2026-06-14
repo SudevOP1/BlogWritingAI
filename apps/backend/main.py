@@ -47,6 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
     allow_origins=[
         "http://localhost:5173",
+        "https://sudevop1.github.io",
     ],
 )
 
