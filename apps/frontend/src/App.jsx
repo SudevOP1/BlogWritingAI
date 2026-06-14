@@ -16,7 +16,7 @@ import FeedPage from "./pages/FeedPage.jsx";
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/BlogWritingAI/">
       <ToastProvider>
         <AuthProvider>
           <Routes>
