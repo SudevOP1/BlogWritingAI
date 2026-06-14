@@ -1,0 +1,13 @@
+
+# virtual envs
+venv/
+.env
+
+# python cache
+__pycache__/
+
+# output markdowns
+outputs/
+
+# logs
+logs/
