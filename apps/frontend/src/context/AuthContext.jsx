@@ -15,6 +15,8 @@ export const useAuthContext = () => {
 
 export const AuthProvider = ({ children }) => {
   const backendUrl = window.location.hostname === "localhost" ? "http://127.0.0.1:8000" : "https://blogwritingai.onrender.com";
+  const frontendUrl =
+    window.location.hostname === "localhost" ? "http://127.0.0.1:8000" : "https://sudevop1.github.io/BlogWritingAI";
   const navigate = useNavigate();
   const { addToast } = useToastContext();
 
@@ -171,6 +173,7 @@ export const AuthProvider = ({ children }) => {
     username: username,
     displayName: displayName,
     backendUrl: backendUrl,
+    frontendUrl: frontendUrl,
     accessToken: accessToken,
     signupUser: signupUser,
     loginUser: loginUser,

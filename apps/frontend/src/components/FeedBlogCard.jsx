@@ -5,7 +5,7 @@ import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
 
 function FeedBlogCard({ blog, onTopicSelect }) {
-  const { backendUrl, accessToken } = useAuthContext();
+  const { frontendUrl, backendUrl, accessToken } = useAuthContext();
   const { addToast } = useToastContext();
   const navigate = useNavigate();
 
@@ -120,7 +120,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
   const handleShare = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/blog/${blog.id}`;
+    const shareUrl = `${frontendUrl}/blog/${blog.id}`;
     navigator.clipboard.writeText(shareUrl);
     addToast("Copied link to clipboard!", "green", 2);
   };
