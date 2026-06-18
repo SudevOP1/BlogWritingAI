@@ -96,6 +96,29 @@ async def remove_bookmark(blog_id: str, current_user: dict = Depends(get_current
         }
 
 
+@user_router.get("/bookmarks/{blog_id}/status")
+async def check_bookmark_status(blog_id: str, current_user: dict = Depends(get_current_user)):
+    try:
+        user_id = ObjectId(current_user["id"])
+        user = await db.users.find_one({"_id": user_id})
+        bookmark_ids = user.get("bookmarks", [])
+        
+        is_bookmarked = ObjectId(blog_id) in bookmark_ids
+        
+        return {"success": True, "bookmarked": is_bookmarked}
+    except Exception as e:
+        debug.error(
+            f"500 GET /users/bookmarks/{blog_id}/status",
+            traceback.format_exc(),
+            api_route=True,
+        )
+        return {
+            "success": False,
+            "error": f"something went wrong: {str(e)}",
+            "status_code": 500,
+        }
+
+
 @user_router.get("/bookmarks")
 async def get_bookmarks(current_user: dict = Depends(get_current_user)):
     try:

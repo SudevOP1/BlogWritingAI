@@ -183,7 +183,7 @@ const Comment = ({ comment, isReply = false, blogId }) => {
       <div className="flex-1 flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <span className="font-bold text-sm text-slate-200">@{comment.username || "anonymous"}</span>
-          <span className="text-xs text-slate-500">{new Date(comment.created_at || Date.now()).toLocaleDateString()}</span>
+          <span className="text-xs text-slate-500">{new Date(comment.created_at || Date.now()).toLocaleDateString("en-GB")}</span>
         </div>
         <p className="text-slate-300 text-sm leading-relaxed">{comment.content}</p>
 

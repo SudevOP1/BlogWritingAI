@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, User, Clock } from "lucide-react";
+import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, Clock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -30,7 +30,7 @@ const getReadableTime = (seconds) => {
 
 const BlogDetailPage = () => {
   const { blogId } = useParams();
-  const { backendUrl, accessToken, username } = useAuthContext();
+  const { frontendUrl, backendUrl, accessToken } = useAuthContext();
   const { addToast } = useToastContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +45,8 @@ const BlogDetailPage = () => {
   const [authorUsername, setAuthorUsername] = useState(null);
   const [isAuthorLoading, setIsAuthorLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   // Countdown timer for rate limit
   useEffect(() => {
@@ -104,6 +106,57 @@ const BlogDetailPage = () => {
     }
   };
 
+  const handleBlogBookmark = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if (!accessToken) {
+      addToast("Please login to bookmark", "red", 3);
+      navigate("/login");
+      return;
+    }
+
+    if (bookmarkLoading) return;
+    setBookmarkLoading(true);
+
+    const targetUrl = `${backendUrl}/users/bookmarks/${blog.id}`;
+    const method = isBookmarked ? "DELETE" : "POST";
+    const oldIsBookmarked = isBookmarked;
+
+    // Optimistic update
+    setIsBookmarked(!oldIsBookmarked);
+
+    try {
+      const res = await fetch(targetUrl, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (!data.success) throw new Error();
+      addToast(isBookmarked ? "Bookmark removed" : "Bookmark saved", "green", 2);
+    } catch (err) {
+      setIsBookmarked(oldIsBookmarked);
+      addToast("Failed to update bookmark", "red", 3);
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  const handleBlogShare = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const shareUrl = `${frontendUrl}/blog/${blog.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    addToast("Copied link to clipboard!", "green", 2);
+  };
+
   const fetchIsLiked = async () => {
     if (!blog?.id) {
       return;
@@ -134,6 +187,37 @@ const BlogDetailPage = () => {
       console.error("Error checking like status:", error);
       addToast("Failed to check like status", "red", 3);
     } finally {
+    }
+  };
+
+  const fetchIsBookmarked = async () => {
+    if (!blog?.id) {
+      return;
+    }
+
+    if (!accessToken) {
+      setIsBookmarked(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${backendUrl}/users/bookmarks/${blog.id}/status`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to check bookmark status");
+      }
+      const data = await res.json();
+      if (!data.success) {
+        console.error("Backend validation failed:", data.error);
+        throw new Error("Failed to check bookmark status");
+      }
+      setIsBookmarked(data.bookmarked);
+    } catch (error) {
+      console.error("Error checking bookmark status:", error);
     }
   };
 
@@ -256,11 +340,12 @@ const BlogDetailPage = () => {
     };
   }, [blogId, backendUrl]);
 
-  // fetch authorUsername, isLiked
+  // fetch authorUsername, isLiked, isBookmarked
   useEffect(() => {
     if (blog && (blog.status === "completed" || blog.status === "failed")) {
       fetchAuthorUsername();
       fetchIsLiked();
+      fetchIsBookmarked();
     }
   }, [blog?.id, blog?.status, accessToken]);
 
@@ -501,9 +586,9 @@ const BlogDetailPage = () => {
       {/* author details and metadata */}
       <div className="mt-7 flex flex-row items-center justify-between border-y border-slate-800 py-4">
         <div className="flex flex-row gap-4 items-center">
-          <div
+          <Link
+            to={authorUsername !== null ? `/user/${blog.author_id}` : "#"}
             className="flex flex-row gap-4 items-center cursor-pointer"
-            onClick={() => authorUsername && navigate(`/user/${blog.author_id}`)}
           >
             {isAuthorLoading ? (
               <div className="flex items-center gap-4 animate-pulse">
@@ -518,14 +603,21 @@ const BlogDetailPage = () => {
                 <span className="text-primary text-xl font-medium">{authorUsername}</span>
               </div>
             )}
-          </div>
-          <p className="text-slate-500 text-md">{new Date(blog.created_at).toLocaleDateString()}</p>
+          </Link>
+          <p className="text-slate-500 text-md">{new Date(blog.created_at).toLocaleDateString("en-GB")}</p>
         </div>
 
         {/* like, comment, bookmark, share buttons */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Button type="button" variant="ghost" size="sm" onClick={handleBlogLike} className="outline-none focus:outline-none">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleBlogLike}
+              className="outline-none focus:outline-none"
+              title={isLiked ? "Unlike" : "Like"}
+            >
               <Heart fill={isLiked ? "red" : "none"} className={`w-5 h-5 mr-2 ${isLiked ? "text-red-500" : ""}`} />
               {blog.num_likes || 0}
             </Button>
@@ -533,14 +625,15 @@ const BlogDetailPage = () => {
               variant="ghost"
               size="sm"
               onClick={() => document.getElementById("comments-section").scrollIntoView({ behavior: "smooth" })}
+              title="Comments"
             >
               <MessageSquare className="w-5 h-5 mr-2" />
               {blog.num_comments || 0}
             </Button>
-            <Button variant="ghost" size="sm">
-              <Bookmark className="w-5 h-5" />
+            <Button variant="ghost" size="sm" onClick={handleBlogBookmark} title={isBookmarked ? "Remove Bookmark" : "Bookmark"}>
+              <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-current text-primary" : ""}`} />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleBlogShare} title="Copy Link">
               <Share2 className="w-5 h-5" />
             </Button>
           </div>
