@@ -84,15 +84,15 @@ const Navbar = () => {
             </Button>
           </Link>
 
+          <Link to="/feed" onClick={() => setMobileOpen(false)}>
+            <Button variant="secondary" className="w-full justify-start">
+              <House className="w-4 h-4 mr-2" />
+              Feed
+            </Button>
+          </Link>
+
           {userId ? (
             <>
-              <Link to="/feed" onClick={() => setMobileOpen(false)}>
-                <Button variant="secondary" className="w-full justify-start">
-                  <House className="w-4 h-4 mr-2" />
-                  Feed
-                </Button>
-              </Link>
-
               <Link to={`/user/${userId}`} onClick={() => setMobileOpen(false)}>
                 <Button variant="secondary" className="w-full justify-start">
                   <User className="w-4 h-4 mr-2" />
