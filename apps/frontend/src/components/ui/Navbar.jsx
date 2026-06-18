@@ -27,15 +27,15 @@ const Navbar = () => {
             </Button>
           </Link>
 
+          <Link to="/feed">
+            <Button variant="ghost" size="sm">
+              <House className="w-4 h-4 mr-2" />
+              Feed
+            </Button>
+          </Link>
+
           {userId ? (
             <>
-              <Link to="/feed">
-                <Button variant="ghost" size="sm">
-                  <House className="w-4 h-4 mr-2" />
-                  Feed
-                </Button>
-              </Link>
-
               <Link to={`/user/${userId}`}>
                 <Button variant="ghost" size="sm">
                   <User className="w-4 h-4 mr-2" />
