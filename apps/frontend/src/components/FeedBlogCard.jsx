@@ -126,8 +126,8 @@ function FeedBlogCard({ blog, onTopicSelect }) {
   };
 
   return (
-    <div
-      onClick={() => navigate(`/blog/${blog.id}`)}
+    <Link
+      to={`/blog/${blog.id}`}
       className="group flex flex-row bg-surface/40 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-primary/40 hover:bg-surface/60 transition duration-300 shadow-md hover:shadow-primary/5 cursor-pointer overflow-hidden mb-4"
     >
       {/* Left Like Sidebar */}
@@ -220,7 +220,7 @@ function FeedBlogCard({ blog, onTopicSelect }) {
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
