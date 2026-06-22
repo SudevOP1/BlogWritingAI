@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, Clock } from "lucide-react";
+import { Heart, MessageSquare, Bookmark, ArrowLeft, Share2, FileText, CheckCircle2, Clock, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -26,6 +26,44 @@ const getReadableTime = (seconds) => {
   if (hours > 0) return `${hours}h ${minutes}m`;
   if (minutes > 0) return `${minutes}m ${secs}s`;
   return `${secs}s`;
+};
+
+const PreWithCopy = ({ children, ...props }) => {
+  const [copied, setCopied] = useState(false);
+
+  const extractText = (node) => {
+    if (typeof node === "string") return node;
+    if (Array.isArray(node)) return node.map(extractText).join("");
+    if (node?.props?.children) return extractText(node.props.children);
+    return "";
+  };
+
+  const codeText = extractText(children);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(codeText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  return (
+    <div className="relative group my-6">
+      <pre {...props} className={`${props.className || ""} !my-0`}>
+        {children}
+      </pre>
+      <button
+        onClick={handleCopy}
+        className="absolute top-3 right-3 p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+        title="Copy code"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  );
 };
 
 const BlogDetailPage = () => {
@@ -552,7 +590,9 @@ const BlogDetailPage = () => {
             <div className="flex-1 overflow-y-auto px-6 lg:px-10 custom-scrollbar bg-slate-900/30">
               {blog.content ? (
                 <article className="markdown-body max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: PreWithCopy }}>
+                    {blog.content}
+                  </ReactMarkdown>
                 </article>
               ) : (
                 <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-500 space-y-4">
@@ -642,7 +682,9 @@ const BlogDetailPage = () => {
 
       {/* content */}
       <div className="markdown-body">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content?.replace(/^\s*#\s+.*?(\r\n|\n|$)/, "")}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: PreWithCopy }}>
+          {blog.content?.replace(/^\s*#\s+.*?(\r\n|\n|$)/, "")}
+        </ReactMarkdown>
       </div>
 
       {/* comments section */}
