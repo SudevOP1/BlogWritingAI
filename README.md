@@ -35,7 +35,7 @@ A full-stack AI-powered blogging platform that uses a multi-agent workflow to re
 
 ### 1. Clone the repo
 
-```bash
+```powershell
 git clone https://github.com/SudevOP1/BlogWritingAI.git
 cd BlogWritingAI
 ```
@@ -44,20 +44,20 @@ cd BlogWritingAI
 
 Create & Setup Virtual Environment
 
-```bash
+```powershell
 python -m venv venv
 venv\Scripts\activate
 ```
 
 Install Dependencies
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 Run Server
 
-```bash
+```powershell
 uvicorn main:app --reload
 ```
 
@@ -65,13 +65,13 @@ uvicorn main:app --reload
 
 Install Dependencies
 
-```bash
+```powershell
 npm i
 ```
 
 Run Server
 
-```bash
+```powershell
 npm run dev
 ```
 
