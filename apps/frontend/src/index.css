@@ -33,10 +33,13 @@
     @apply mb-4;
   }
   .markdown-body ul {
-    @apply list-disc list-inside mb-4 space-y-2;
+    @apply list-disc list-outside mb-4 space-y-2 pl-5;
   }
   .markdown-body ol {
-    @apply list-decimal list-inside mb-4 space-y-2;
+    @apply list-decimal list-outside mb-4 space-y-2 pl-5;
+  }
+  .markdown-body li p {
+    @apply mb-0 inline;
   }
   .markdown-body a {
     @apply text-primary hover:text-primary-hover underline underline-offset-2;
