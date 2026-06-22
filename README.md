@@ -1,6 +1,7 @@
 # BlogWritingAI
 
 A full-stack AI-powered blogging platform that uses a multi-agent workflow to research topics, analyze information, generate structured outlines, and produce Markdown articles. Built with a focus on content quality and automation, the platform also includes safeguards such as IP-based rate limiting, prompt injection prevention and input validation.<br>
+[View Live](https://sudevop1.github.io/BlogWritingAI/)
 
 ## 💡 How it works
 
