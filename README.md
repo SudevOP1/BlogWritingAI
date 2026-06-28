@@ -5,18 +5,13 @@ A full-stack AI-powered blogging platform that uses a multi-agent workflow to re
 
 ## 💡 How it works
 
-1. **Topic Analysis:** Analyzes the topic and determines the optimal content strategy.
-
-2. **Web Research:** Research agents gather, verify, and deduplicate relevant sources.
-
-3. **Content Planning:** An orchestrator creates the article structure and writing plan.
-
-4. **AI Writing:** Specialized LLM agents generate detailed, coherent article sections.
-
-5. **Review & Assembly:** Sections are refined and compiled into Markdown output.
-
-6. **Security & Reliability:** Rate limiting, authentication, validation, and prompt-injection protection.
-   <br>
+- **Topic Analysis:** Analyzes the topic and determines the optimal content strategy.
+- **Web Research:** Research agents gather, verify, and deduplicate relevant sources.
+- **Content Planning:** An orchestrator creates the article structure and writing plan.
+- **AI Writing:** Specialized LLM agents generate detailed, coherent article sections.
+- **Review & Assembly:** Sections are refined and compiled into Markdown output.
+- **Security & Reliability:** Rate limiting, authentication, validation, and prompt-injection protection.
+  <br>
 
 ## 🤖 Agentic Workflow
 
@@ -40,7 +35,7 @@ A full-stack AI-powered blogging platform that uses a multi-agent workflow to re
 
 ### 1. Clone the repo
 
-```bash
+```powershell
 git clone https://github.com/SudevOP1/BlogWritingAI.git
 cd BlogWritingAI
 ```
@@ -49,20 +44,20 @@ cd BlogWritingAI
 
 Create & Setup Virtual Environment
 
-```bash
+```powershell
 python -m venv venv
 venv\Scripts\activate
 ```
 
 Install Dependencies
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 Run Server
 
-```bash
+```powershell
 uvicorn main:app --reload
 ```
 
@@ -70,13 +65,13 @@ uvicorn main:app --reload
 
 Install Dependencies
 
-```bash
+```powershell
 npm i
 ```
 
 Run Server
 
-```bash
+```powershell
 npm run dev
 ```
 
