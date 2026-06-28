@@ -18,6 +18,11 @@ A full-stack AI-powered blogging platform that uses a multi-agent workflow to re
 6. **Security & Reliability:** Rate limiting, authentication, validation, and prompt-injection protection.
    <br>
 
+## 🤖 Agentic Workflow
+
+![Workflow](https://raw.githubusercontent.com/SudevOP1/BlogWritingAI/main/WorkflowDiagram.png)<br>
+<br>
+
 ## 🛠️ Tech Stacks
 
 - **Frontend**: `React` + `Tailwind CSS`
