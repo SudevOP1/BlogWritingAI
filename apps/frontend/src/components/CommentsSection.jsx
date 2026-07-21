@@ -4,6 +4,7 @@ import { User } from "lucide-react";
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
+import Logger from "../services/logger.js";
 import Comment from "./ui/Comment.jsx";
 import Button from "./ui/Button.jsx";
 
@@ -34,11 +35,11 @@ const CommentsSection = ({ blogId }) => {
       if (data.success) {
         setComments(data.comments);
       } else {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to fetch comments");
       }
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      Logger.error("Error fetching comments:", error);
       addToast("Failed to load comments", "red", 3);
     } finally {
       setIsCommentsLoading(false);
@@ -78,11 +79,11 @@ const CommentsSection = ({ blogId }) => {
         setCommentText("");
         setIsCommentInputFocused(false);
       } else {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to post comment");
       }
     } catch (error) {
-      console.error("Error posting comment:", error);
+      Logger.error("Error posting comment:", error);
       addToast("Failed to post comment", "red", 3);
     } finally {
       setIsCommentPostLoading(false);

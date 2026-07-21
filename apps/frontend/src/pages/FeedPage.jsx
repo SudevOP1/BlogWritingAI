@@ -16,6 +16,7 @@ import {
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
+import Logger from "../services/logger.js";
 import FeedBlogCard from "../components/FeedBlogCard.jsx";
 import Loader from "../components/ui/Loader.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -95,7 +96,7 @@ const FeedPage = () => {
         throw new Error(data.error || "Failed to fetch feed");
       }
     } catch (err) {
-      console.error(err);
+      Logger.error(err);
       setError(err.message || "Failed to load blogs. Please try again later.");
       addToast(err.message || "Failed to load blogs", "red", 4);
     } finally {

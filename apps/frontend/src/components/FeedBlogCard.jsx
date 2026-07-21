@@ -164,14 +164,13 @@ function FeedBlogCard({ blog, onTopicSelect }) {
           </div>
           <span className="text-slate-700">•</span>
           <span className="text-slate-400">Posted by</span>
-          <Link
-            to={`/user/${blog.author_id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 font-medium text-slate-300 hover:text-primary transition"
+          <button
+            onClick={() => navigate(`/user/${blog.author_id}`)}
+            className="flex items-center gap-1 font-medium text-slate-300 hover:text-primary transition cursor-pointer"
           >
             <User className="w-3 h-3" />
             {blog.author_username}
-          </Link>
+          </button>
           <span className="text-slate-700">•</span>
           <span className="flex items-center gap-1 text-slate-400">
             <Calendar className="w-3 h-3" />
@@ -192,14 +191,13 @@ function FeedBlogCard({ blog, onTopicSelect }) {
         )}
 
         <div className="flex items-center text-xs font-semibold text-slate-400 border-t border-slate-800/40">
-          <Link
-            to={`/blog/${blog.id}#comments-section`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 hover:text-white transition"
+          <button
+            onClick={() => navigate(`/blog/${blog.id}#comments-section`)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 hover:text-white transition cursor-pointer"
           >
             <MessageSquare className="w-4 h-4 text-slate-500" />
             <span>{blog.num_comments} Comments</span>
-          </Link>
+          </button>
 
           <button
             onClick={handleBookmark}

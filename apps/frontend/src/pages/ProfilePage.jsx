@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Bookmark, FileText } from "lucide-react";
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
+import Logger from "../services/logger.js";
 import Loader from "../components/ui/Loader.jsx";
 import BlogCard from "../components/BlogCard.jsx";
 
@@ -48,12 +49,12 @@ const ProfilePage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to fetch user details");
       }
       setUserDetails(data.user);
     } catch (error) {
-      console.error("Error fetching user details:", error);
+      Logger.error("Error fetching user details:", error);
       addToast("Failed to fetch user details", "red", 3);
     } finally {
       setUserDetailsLoading(false);
@@ -80,12 +81,12 @@ const ProfilePage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to fetch blogs");
       }
       setBlogs(data.blogs || []);
     } catch (error) {
-      console.error("Error fetching blogs:", error);
+      Logger.error("Error fetching blogs:", error);
       addToast("Failed to fetch blogs", "red", 3);
     } finally {
       setBlogsLoading(false);
@@ -111,7 +112,7 @@ const ProfilePage = () => {
       }
       setLikedBlogs(data.blogs || []);
     } catch (error) {
-      console.error("Error fetching liked blogs:", error);
+      Logger.error("Error fetching liked blogs:", error);
       addToast("Failed to fetch liked blogs", "red", 3);
     } finally {
       setLikedBlogsLoading(false);
@@ -137,7 +138,7 @@ const ProfilePage = () => {
       }
       setSavedBlogs(data.blogs || []);
     } catch (error) {
-      console.error("Error fetching saved blogs:", error);
+      Logger.error("Error fetching saved blogs:", error);
       addToast("Failed to fetch saved blogs", "red", 3);
     } finally {
       setSavedBlogsLoading(false);
@@ -177,7 +178,7 @@ const ProfilePage = () => {
 
       addToast(data.following ? `Followed @${userDetails.username}` : `Unfollowed @${userDetails.username}`, "green", 3);
     } catch (error) {
-      console.error("Error toggling follow:", error);
+      Logger.error("Error toggling follow:", error);
       addToast(error.message || "Failed to update follow status", "red", 3);
     }
   };
@@ -200,7 +201,7 @@ const ProfilePage = () => {
       }
       setModalUsers(data[type] || []);
     } catch (error) {
-      console.error(`Error fetching ${type}:`, error);
+      Logger.error(`Error fetching ${type}:`, error);
       addToast(`Failed to load ${type}`, "red", 3);
     } finally {
       setModalLoading(false);

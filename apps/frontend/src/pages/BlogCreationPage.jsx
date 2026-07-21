@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
 import { Send, Sparkles } from "lucide-react";
+
 import { useAuthContext } from "../context/AuthContext";
 import { useToastContext } from "../context/ToastContext";
+import Logger from "../services/logger.js";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
 
 const BlogCreationPage = () => {
   const { backendUrl, accessToken } = useAuthContext();
@@ -54,16 +56,16 @@ const BlogCreationPage = () => {
       } else {
         if (data.status_code === 429) {
           setRateLimitRemainingSeconds(data.remaining_seconds);
-          console.error("Rate limit exceeded, refreshes in", data.remaining_seconds);
+          Logger.error("Rate limit exceeded, refreshes in", data.remaining_seconds);
           addToast("Rate limit exceeded", "red", 3);
           return;
         } else {
-          console.error("Failed to generate blog:", data.error);
+          Logger.error("Failed to generate blog:", data.error);
           throw new Error("Failed to generate blog");
         }
       }
     } catch (error) {
-      console.error("Error generating blog:", error);
+      Logger.error("Error generating blog:", error);
       addToast("Failed to generate blog", "red", 3);
     } finally {
       setIsLoading(false);

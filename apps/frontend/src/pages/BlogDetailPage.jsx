@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useToastContext } from "../context/ToastContext.jsx";
+import Logger from "../services/logger.js";
 import Button from "../components/ui/Button.jsx";
 import Loader from "../components/ui/Loader.jsx";
 import CommentsSection from "../components/CommentsSection.jsx";
@@ -46,7 +47,7 @@ const PreWithCopy = ({ children, ...props }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text: ", err);
+      Logger.error("Failed to copy text: ", err);
     }
   };
 
@@ -132,11 +133,11 @@ const BlogDetailPage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to like");
       }
     } catch (error) {
-      console.error("Error liking blog:", error);
+      Logger.error("Error liking blog:", error);
       addToast("Failed to like blog", "red", 3);
       // Rollback
       setIsLiked(oldIsLiked);
@@ -217,12 +218,12 @@ const BlogDetailPage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to check like status");
       }
       setIsLiked(data.liked);
     } catch (error) {
-      console.error("Error checking like status:", error);
+      Logger.error("Error checking like status:", error);
       addToast("Failed to check like status", "red", 3);
     } finally {
     }
@@ -250,12 +251,12 @@ const BlogDetailPage = () => {
       }
       const data = await res.json();
       if (!data.success) {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to check bookmark status");
       }
       setIsBookmarked(data.bookmarked);
     } catch (error) {
-      console.error("Error checking bookmark status:", error);
+      Logger.error("Error checking bookmark status:", error);
     }
   };
 
@@ -273,11 +274,11 @@ const BlogDetailPage = () => {
       if (data.success) {
         setAuthorUsername(data.user.username);
       } else {
-        console.error("Backend validation failed:", data.error);
+        Logger.error("Backend validation failed:", data.error);
         throw new Error("Failed to fetch author");
       }
     } catch (error) {
-      console.error("Error fetching author:", error);
+      Logger.error("Error fetching author:", error);
       addToast("Failed to load author", "red", 3);
     } finally {
       setIsAuthorLoading(false);
@@ -311,7 +312,7 @@ const BlogDetailPage = () => {
         }
 
         if (data.type === "blog") {
-          console.log(data.blog);
+          Logger.log(data.blog);
           setBlog(data.blog);
           setIsEditing(false);
 
@@ -356,7 +357,7 @@ const BlogDetailPage = () => {
           return;
         }
 
-        console.error("WebSocket error:", err);
+        Logger.error("WebSocket error:", err);
         hasFailed = true;
         addToast("Failed to connect to the blog service.", "red", 5);
         setError("Failed to connect to the blog service.");
@@ -364,7 +365,7 @@ const BlogDetailPage = () => {
       };
 
       ws.onclose = () => {
-        console.log("WebSocket connection closed");
+        Logger.log("WebSocket connection closed");
       };
     };
 

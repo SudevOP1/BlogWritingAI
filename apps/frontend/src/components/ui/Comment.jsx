@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
+
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useToastContext } from "../../context/ToastContext.jsx";
+import Logger from "../../services/logger.js";
 import Button from "./Button.jsx";
 
 const Comment = ({ comment, isReply = false, blogId }) => {
@@ -48,7 +50,7 @@ const Comment = ({ comment, isReply = false, blogId }) => {
         throw new Error(data.error || "Failed to like comment");
       }
     } catch (error) {
-      console.error("Error liking comment:", error);
+      Logger.error("Error liking comment:", error);
       addToast("Failed to like comment", "red", 3);
     }
   };
@@ -76,7 +78,7 @@ const Comment = ({ comment, isReply = false, blogId }) => {
         throw new Error(data.error || "Failed to fetch replies");
       }
     } catch (error) {
-      console.error("Error fetching replies:", error);
+      Logger.error("Error fetching replies:", error);
       addToast("Failed to load replies", "red", 3);
     } finally {
       setIsLoadingReplies(false);
@@ -164,7 +166,7 @@ const Comment = ({ comment, isReply = false, blogId }) => {
         throw new Error(data.error || "Failed to post reply");
       }
     } catch (error) {
-      console.error("Error posting reply:", error);
+      Logger.error("Error posting reply:", error);
       addToast("Failed to post reply", "red", 3);
     } finally {
       setIsReplyPostLoading(false);
