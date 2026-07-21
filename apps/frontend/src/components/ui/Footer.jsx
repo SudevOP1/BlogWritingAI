@@ -1,11 +1,13 @@
+import { Link } from "react-router-dom";
+
 const footerLinks = [
   {
-    title: "About",
-    url: "#",
+    title: "Github",
+    url: "https://www.github.com/SudevOP1/BlogWritingAI/",
   },
   {
-    title: "Contact",
-    url: "#",
+    title: "About",
+    url: "/",
   },
 ];
 
@@ -28,14 +30,16 @@ const Footer = () => {
           </a>
         </p>
         <div className="flex items-center space-x-6">
-          {footerLinks.map((footerLink) => (
-            <a
-              key={footerLink.title}
-              href={footerLink.url}
+          {footerLinks.map((footerLink, idx) => (
+            <Link
+              key={idx}
+              to={footerLink.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-sm md:text-md text-secondary hover:text-primary transition-colors duration-200"
             >
               {footerLink.title}
-            </a>
+            </Link>
           ))}
         </div>
       </div>
