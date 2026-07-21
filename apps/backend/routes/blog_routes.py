@@ -452,9 +452,11 @@ async def get_blog_feed(
                 "author_username": b.get("author_username", "anonymous"),
                 "num_likes": b.get("num_likes", 0),
                 "num_comments": b.get("num_comments", 0),
-                "is_liked": current_user_obj_id in b.get("liked_by_users", [])
-                if current_user_obj_id
-                else False,
+                "is_liked": (
+                    current_user_obj_id in b.get("liked_by_users", [])
+                    if current_user_obj_id
+                    else False
+                ),
                 "is_bookmarked": blog_id_str in user_bookmarks,
             }
             processed_blogs.append(processed)
@@ -476,28 +478,6 @@ async def get_blog_feed(
     except Exception as e:
         debug.error(
             f"500 GET /blogs/feed",
-            traceback.format_exc(),
-            api_route=True,
-        )
-        return {
-            "success": False,
-            "error": f"something went wrong: {str(e)}",
-            "status_code": 500,
-        }
-
-
-@blog_router.get("/topics")
-async def get_blog_topics():
-    try:
-        # Get distinct topics from completed/published blogs
-        topics = await db.blogs.distinct("topic", {"status": {"$in": ["completed"]}})
-        topics = [t.strip() for t in topics if t and t.strip()]
-        # Unique and sorted list of topics
-        unique_topics = sorted(list(set(topics)))
-        return {"success": True, "topics": unique_topics}
-    except Exception as e:
-        debug.error(
-            f"500 GET /blogs/topics",
             traceback.format_exc(),
             api_route=True,
         )

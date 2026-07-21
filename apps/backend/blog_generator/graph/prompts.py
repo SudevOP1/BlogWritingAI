@@ -27,9 +27,9 @@ Your output JSON must follow this exact schema:
 - mode: string (closed_book / hybrid / open_book)
 - queries: list[string] (if needs_research=True, list should have 3-10 queries)
 
-If the topic is invalid, empty, nonsensical, or insufficiently specified, return EXACTLY:
-{"needs_research":false,"mode":"closed_book","queries":[],"error":"INVALID_TOPIC"}
 If the topic appears to be a product, model, company, technology, codename, or named entity that you do not recognize, assume it is real and set needs_research=true.
+If the topic is invalid, vulgar, empty, nonsensical, or insufficiently specified, return EXACTLY:
+{"needs_research":false,"mode":"closed_book","queries":[],"error":"INVALID_TOPIC"}
 
 Topic: <user_input>{topic}</user_input>"""
 
@@ -79,13 +79,13 @@ Hard Requirements:
 
 Quality bar:
 - Assume the reader is a developer; use correct terminology.
-- Bullets must be actionable: build/compare/measure/verify/debug.
+- Bullets must be actionable: build / compare / measure / verify / debug.
 - Ensure the overall plan includes at least 2 of these somewhere:
   - minimal code sketch / MWE (set requires_code=True for that section)
   - edge cases / failure modes
-  - performance/cost considerations
-  - security/privacy considerations (if relevant)
-  - debugging/observability tips
+  - performance / cost considerations
+  - security / privacy considerations (if relevant)
+  - debugging / observability tips
 
 Grounding rules:
 - Mode closed_book: keep it evergreen; do not depend on evidence.
@@ -136,13 +136,13 @@ Hard constraints:
 - Start with a '## <Section Title>' heading.
 
 Scope guard:
-- If blog_kind == "news_roundup": do NOT turn this into a tutorial/how-to guide.
+- If blog_kind == "news_roundup": do NOT turn this into a tutorial / how-to guide.
   Do NOT teach web scraping, RSS, automation, or "how to fetch news" unless bullets explicitly ask for it.
   Focus on summarizing events and implications.
 
 Grounding policy:
 - If mode == open_book:
-  - Do NOT introduce any specific event/company/model/funding/policy claim unless it is supported by provided Evidence URLs.
+  - Do NOT introduce any specific event / company / model / funding / policy claim unless it is supported by provided Evidence URLs.
   - For each event claim, attach a source as a Markdown link: ([Source](URL)).
   - Only use URLs provided in Evidence. If not supported, write: "Not found in provided sources."
 - If requires_citations == true:
@@ -179,7 +179,12 @@ Evidence (ONLY use these URLs when citing): [
 def _sanitize_input(value: str) -> str:
     """removes XML tags for protection from prompt injection"""
     value_str = str(value)
-    return re.sub(r'</?(?:user_input|raw_results|topic|goal|bullets)>', '', value_str, flags=re.IGNORECASE)
+    return re.sub(
+        r"</?(?:user_input|raw_results|topic|goal|bullets)>",
+        "",
+        value_str,
+        flags=re.IGNORECASE,
+    )
 
 
 def _get_formatted_prompt(prompt: str, **kwargs):

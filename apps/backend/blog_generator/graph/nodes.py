@@ -42,11 +42,20 @@ def research_node(state: State, config=None) -> dict:
 
     # take only first 10 queries from state.queries
     queries = state.queries[:10] if state.queries is not None else []
-    max_results = 6
+    max_total_results = 6
+    results_per_query = (
+        (max_total_results + len(queries) - 1) // len(queries)
+        if queries
+        else max_total_results
+    )
 
     raw_results: list[dict] = []
     for query in queries:
-        raw_results.extend(invoke_internet_search(query=query, max_results=max_results))
+        raw_results.extend(
+            invoke_internet_search(query=query, max_results=results_per_query)
+        )
+
+    raw_results = raw_results[:max_total_results]
 
     if not raw_results:
         return {"evidence": []}
